@@ -30,7 +30,8 @@ export function Hero({
   email: string;
 }) {
   return (
-    <section className="relative grid min-h-[calc(100svh-4rem)] items-center gap-8 py-12 lg:grid-cols-[1.25fr_1fr] lg:py-0">
+    // overflow-x-clip: the sculpture hangs off the right edge on phones; clip (not hidden) keeps vertical overflow visible.
+    <section className="relative grid min-h-[calc(100svh-4rem)] overflow-x-clip items-center gap-8 py-12 lg:grid-cols-[1.25fr_1fr] lg:py-0">
       <div className="relative z-10">
         <p className="anim-fade-up font-mono text-xs uppercase tracking-[0.18em] text-ink-3" style={delay(0.05)}>
           {eyebrow}
