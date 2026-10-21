@@ -1,8 +1,11 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { resume, type ResumeProject } from "./resume";
 
-/** Tag shared by all GitHub data; the webhook route revalidates it on push. */
+/** Tag shared by all GitHub data; /api/revalidate refreshes it on demand. */
 export const GITHUB_CACHE_TAG = "github";
+
+/** Re-check GitHub every 15 minutes; new portfolio-tagged repos appear without any per-repo setup. */
+const GITHUB_CACHE_LIFE = { stale: 300, revalidate: 900, expire: 86400 };
 
 const API = "https://api.github.com";
 const USERNAME = process.env.GITHUB_USERNAME ?? "Abiks06";
@@ -96,7 +99,7 @@ function fallbackProjects(): Project[] {
  */
 export async function getProjects(): Promise<Project[]> {
   "use cache";
-  cacheLife("hours");
+  cacheLife(GITHUB_CACHE_LIFE);
   cacheTag(GITHUB_CACHE_TAG);
 
   try {
@@ -124,7 +127,7 @@ export async function getProjects(): Promise<Project[]> {
 /** Last year of contributions. Needs GITHUB_TOKEN (GraphQL only); returns null without one. */
 export async function getContributions(): Promise<{ total: number; days: ContributionDay[] } | null> {
   "use cache";
-  cacheLife("hours");
+  cacheLife(GITHUB_CACHE_LIFE);
   cacheTag(GITHUB_CACHE_TAG);
 
   if (!process.env.GITHUB_TOKEN) return null;

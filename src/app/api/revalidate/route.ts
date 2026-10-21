@@ -1,24 +1,24 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 import { revalidateTag } from "next/cache";
 import { GITHUB_CACHE_TAG } from "@/lib/github";
 
 /**
- * GitHub webhook target. Point a user- or repo-level webhook at
- * /api/revalidate (content type application/json, secret = REVALIDATE_SECRET)
- * and every push refreshes the cached GitHub data.
+ * Manual "refresh now" for GitHub data, e.g. right after tagging a new repo.
+ * Open /api/revalidate?secret=<REVALIDATE_SECRET> or send the secret as
+ * `Authorization: Bearer <secret>`. Without it the site still refreshes every 15 minutes.
  */
-export async function POST(request: Request) {
+export async function GET(request: Request) {
   const secret = process.env.REVALIDATE_SECRET;
   if (!secret) return Response.json({ error: "Revalidation is not configured" }, { status: 500 });
 
-  const body = await request.text();
-  const signature = request.headers.get("x-hub-signature-256") ?? "";
-  const expected = `sha256=${createHmac("sha256", secret).update(body).digest("hex")}`;
+  const provided =
+    new URL(request.url).searchParams.get("secret") ??
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
+    "";
 
-  const valid =
-    signature.length === expected.length && timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
-  if (!valid) return Response.json({ error: "Invalid signature" }, { status: 401 });
+  const valid = provided.length === secret.length && timingSafeEqual(Buffer.from(provided), Buffer.from(secret));
+  if (!valid) return Response.json({ error: "Invalid secret" }, { status: 401 });
 
   revalidateTag(GITHUB_CACHE_TAG, "max");
-  return Response.json({ revalidated: true, event: request.headers.get("x-github-event") });
+  return Response.json({ revalidated: true, at: new Date().toISOString() });
 }

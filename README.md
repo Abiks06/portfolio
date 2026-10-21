@@ -9,7 +9,7 @@ Personal portfolio for Ayomide Abikoye, CS undergrad at Academic City University
 
 ## Stack
 
-Next.js (App Router) · TypeScript · Tailwind CSS · Motion · Lenis · deployed on Vercel. GitHub data is pre-rendered, revalidated hourly, and refreshed instantly via a GitHub webhook.
+Next.js (App Router) · TypeScript · Tailwind CSS · Motion · Lenis · deployed on Vercel. GitHub data is pre-rendered and re-checked every 15 minutes, so a newly tagged repo appears with no per-repo setup. For an immediate refresh, open `/api/revalidate?secret=<REVALIDATE_SECRET>`.
 
 ## Setup
 
