@@ -164,12 +164,16 @@
       "name": "EasyStore"
     },
     {
-      "name": "License Plate Detection",
-      "featured": false,
-      "startDate": "2026-02",
-      "endDate": "2026-05",
-      "description": "Computer vision model for automated license plate recognition with real-time bounding-box overlays.",
-      "keywords": ["Python", "Computer Vision", "Machine Learning"]
+      "repo": "license-plate-detection",
+      "name": "PlateSight: License Plate Detection",
+      "featured": true,
+      "highlights": [
+        "YOLO11 neural network fine-tuned for license plates with a reproducible PyTorch/Ultralytics pipeline and a one-click GPU training notebook.",
+        "Runs entirely in the browser: ONNX Runtime Web in a Web Worker on multi-threaded WebAssembly, about 30 ms per image, with nothing uploaded.",
+        "INT8 static quantisation cut the model 70% (10.5 MB to 3.1 MB) for a 0.3-point mAP@50 cost, behind an automatic accuracy gate.",
+        "Live webcam detection and one-click plate redaction for privacy-safe sharing, under a strict Content-Security-Policy."
+      ],
+      "keywords": ["Python", "PyTorch", "YOLO", "ONNX Runtime", "WebAssembly", "React"]
     }
   ],
   "certificates": [
