@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Next.js / build output
+.next/
+out/
+build/
+dist/
+
+# env files (secrets: GITHUB_TOKEN etc.)
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# misc
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+coverage/
+*.tsbuildinfo
+next-env.d.ts

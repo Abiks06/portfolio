@@ -1,0 +1,196 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
+  "basics": {
+    "name": "Ayomide Emmanuel Abikoye",
+    "label": "Computer Science Undergraduate · Full-Stack & Backend Developer",
+    "image": "https://avatars.githubusercontent.com/u/157048243?v=4",
+    "email": "abikoyeayomide29@gmail.com",
+    "summary": "Computer Science student at Academic City University (CWA 83.14) with internship experience across three of Ghana's largest banks. I build secure full-stack web apps with React, Next.js and Supabase, write backend services in Java Spring Boot, and enjoy real-time 3D graphics with Three.js. I care about security, data integrity and software that holds up in regulated, high-stakes environments.",
+    "location": {
+      "city": "Accra",
+      "countryCode": "GH"
+    },
+    "profiles": [
+      { "network": "GitHub", "username": "Abiks06", "url": "https://github.com/Abiks06" },
+      { "network": "LinkedIn", "username": "ayomide-abikoye-702a062b3", "url": "https://www.linkedin.com/in/ayomide-abikoye-702a062b3" }
+    ]
+  },
+  "education": [
+    {
+      "institution": "Academic City University",
+      "url": "https://acity.edu.gh",
+      "area": "Computer Science",
+      "studyType": "BSc",
+      "startDate": "2024-01",
+      "endDate": "2027-05",
+      "score": "CWA 83.14",
+      "courses": [
+        "Data Structures",
+        "Algorithms",
+        "Software Engineering",
+        "Web Development",
+        "Data Science",
+        "Computer Graphics & Multimedia",
+        "Research Methods"
+      ],
+      "activities": ["Football", "Basketball", "Coding"]
+    },
+    {
+      "institution": "Morning Star High School",
+      "area": "Science",
+      "studyType": "WASSCE",
+      "startDate": "2020",
+      "endDate": "2023"
+    }
+  ],
+  "work": [
+    {
+      "name": "Access Bank Ghana",
+      "position": "IT Intern (Rotational)",
+      "location": "Accra, Ghana · On-site",
+      "startDate": "2026-07",
+      "endDate": "2026-08",
+      "summary": "5-week rotation across Security, Domain & Collab, Hardware, Networking, Infrastructure, Enterprise Apps, Dev Support and Database units.",
+      "highlights": [
+        "Deployed a Jellyfin media server in a virtualized Oracle Linux 10 environment on Oracle VirtualBox to demonstrate Linux server administration.",
+        "Provisioned new laptops through Windows Active Directory, joined them to the bank's domain and dispatched them to branches while providing first-line IT support.",
+        "Assisted with troubleshooting the Flexcube core banking software, shadowed database administrators and handled secure transfer of physical backup drives for disaster recovery.",
+        "Gained exposure to CI/CD, GitOps, containerization, Infrastructure as Code, subnetting and enterprise router configuration."
+      ],
+      "keywords": ["IT Infrastructure", "Active Directory", "Oracle Linux", "Virtualization", "Networking", "Disaster Recovery"]
+    },
+    {
+      "name": "Ecobank Ghana (eProcess)",
+      "position": "Software Engineering Intern · Backend",
+      "location": "Accra, Ghana · On-site",
+      "startDate": "2026-06",
+      "endDate": "2026-07",
+      "summary": "Joined the Software Center backend team building services for Ecobank's pan-African digital banking platforms.",
+      "highlights": [
+        "Built RESTful APIs in Java Spring Boot and presented mini-projects to senior developers.",
+        "Engineered standardized exception handling that maps system errors to precise financial error codes instead of generic responses.",
+        "Mapped Java domain models to PostgreSQL with Spring Data JPA and Hibernate, enforcing data integrity through Spring's transaction management.",
+        "Implemented stateless JWT authentication and role-based access control with Spring Security; wrote unit and integration tests with JUnit and Mockito.",
+        "Tested production systems, including the Ecobank Mobile App and a POS system, to verify transactions processed correctly."
+      ],
+      "keywords": ["Java", "Spring Boot", "Spring Security", "PostgreSQL", "JPA/Hibernate", "JUnit", "Mockito", "Angular", "RxJS"]
+    },
+    {
+      "name": "Stanbic Bank Ghana",
+      "position": "Software Engineering Intern",
+      "location": "Accra, Ghana · On-site",
+      "startDate": "2023-06",
+      "endDate": "2023-08",
+      "highlights": [
+        "Collaborated with the programming team to debug and test software applications, ensuring high code quality.",
+        "Researched software improvements and compiled detailed project reports."
+      ],
+      "keywords": ["C#", "Software Testing", "Debugging"]
+    },
+    {
+      "name": "Morning Star High School",
+      "position": "IT Assistant (Part-time)",
+      "location": "Accra, Ghana · On-site",
+      "startDate": "2022-09",
+      "endDate": "2023-05",
+      "highlights": [
+        "Provided technical support and troubleshooting for school computers.",
+        "Assisted in the procurement of new computer systems for the school.",
+        "Performed software updates and maintenance to extend the life of the school's computers."
+      ],
+      "keywords": ["Technical Support", "Software Maintenance"]
+    }
+  ],
+  "leadership": [
+    {
+      "organization": "Computer Graphics & Multimedia, Academic City",
+      "position": "Technical Lead · 3D ATM Interface Simulation",
+      "startDate": "2026-03",
+      "endDate": "2026-05",
+      "teamSize": 12,
+      "highlights": [
+        "Directed a 12-member team to build an interactive, web-based 3D ATM simulation in Three.js, managing the timeline and component integration.",
+        "Engineered the 3D scene architecture with custom geometry, complex lighting and raycasting for precise interaction.",
+        "Optimized rendering performance by reducing draw calls and managing asset loading for high frame rates across devices."
+      ]
+    },
+    {
+      "organization": "Research Methods, Academic City",
+      "position": "Project Lead · License Plate Detection ML Model",
+      "startDate": "2026-02",
+      "endDate": "2026-05",
+      "teamSize": 5,
+      "highlights": [
+        "Led a 5-member team designing and testing a computer vision app for automated license plate recognition.",
+        "Managed the data pipeline, analyzing model metrics to iteratively optimize training and image pre-processing.",
+        "Integrated bounding-box overlays and real-time visual feedback, translating model output into UI coordinates."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "repo": "Secure-Analytics-Pro",
+      "name": "Secure Analytics Pro",
+      "featured": true,
+      "startDate": "2025-10",
+      "endDate": "2025-12",
+      "highlights": [
+        "Full-stack analytics platform with a secure CSV/JSON processing engine and real-time visualization dashboard.",
+        "JWT authentication and Supabase Row Level Security for strict per-user data isolation.",
+        "Containerized monorepo with automated dependency management, scoring 100% on GitHub security audits."
+      ],
+      "keywords": ["React", "Supabase", "JWT", "RLS", "Docker"]
+    },
+    {
+      "repo": "ATM-Interface-Simulator",
+      "name": "Secure ATM Interface Simulator",
+      "featured": true,
+      "startDate": "2026-03",
+      "endDate": "2026-05",
+      "highlights": [
+        "Modular 3D environment in React Three Fiber with custom GLSL shaders implementing Phong and Gouraud lighting.",
+        "Low-level graphics algorithms from scratch: Bresenham's line, cubic Bézier curves and Cohen–Sutherland clipping.",
+        "Finite state machine handling secure PIN entry, authentication and cash withdrawal.",
+        "Spatial audio and keyframe animation driven by manual 4×4 matrix transformations."
+      ],
+      "keywords": ["Three.js", "React Three Fiber", "GLSL", "Computer Graphics", "FSM"]
+    },
+    {
+      "name": "License Plate Detection",
+      "featured": false,
+      "startDate": "2026-02",
+      "endDate": "2026-05",
+      "description": "Computer vision model for automated license plate recognition with real-time bounding-box overlays.",
+      "keywords": ["Python", "Computer Vision", "Machine Learning"]
+    }
+  ],
+  "certificates": [
+    { "name": "Responsive Web Design", "issuer": "freeCodeCamp" },
+    { "name": "JavaScript Algorithms and Data Structures", "issuer": "freeCodeCamp" },
+    { "name": "Java", "issuer": "Udemy" },
+    { "name": "Python Bootcamp", "issuer": "Udemy" },
+    { "name": "Web Development", "issuer": "Udemy" },
+    { "name": "Software Engineering Job Simulation", "issuer": "Electronic Arts · Forage" },
+    { "name": "Project Management Job Simulation", "issuer": "CBRE · Forage" }
+  ],
+  "skills": [
+    { "name": "Languages", "keywords": ["Java", "Python", "JavaScript", "TypeScript", "C++", "SQL", "GLSL"] },
+    { "name": "Frontend", "keywords": ["React", "Next.js", "Three.js", "React Three Fiber", "Angular", "RxJS"] },
+    { "name": "Backend", "keywords": ["Spring Boot", "Spring Security", "Spring Data JPA", "Hibernate", "REST APIs", "JWT"] },
+    { "name": "Data", "keywords": ["PostgreSQL", "MySQL", "Supabase"] },
+    { "name": "Testing", "keywords": ["JUnit", "Mockito", "Integration Testing"] },
+    { "name": "Infrastructure", "keywords": ["Docker", "Linux", "VirtualBox", "Active Directory", "Networking", "Git"] },
+    { "name": "Analytical", "keywords": ["Systems & Architecture Analysis", "Problem Solving", "Business Analysis"] }
+  ],
+  "languages": [
+    { "language": "English", "fluency": "Fluent" },
+    { "language": "Yoruba", "fluency": "Fluent" },
+    { "language": "French", "fluency": "Intermediate (written)" }
+  ],
+  "interests": [
+    { "name": "Football" },
+    { "name": "Basketball" },
+    { "name": "Gaming" },
+    { "name": "Reading" }
+  ]
+}
