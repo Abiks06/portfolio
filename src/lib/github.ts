@@ -69,7 +69,8 @@ function toProject(repo: GitHubRepo | null, extra: ResumeProject | undefined, la
   return {
     slug: (repo?.name ?? name).toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     name,
-    description: repo?.description ?? extra?.description ?? null,
+    // Repos without a GitHub description borrow the first resume highlight.
+    description: repo?.description ?? extra?.description ?? extra?.highlights?.[0] ?? null,
     url: repo?.html_url ?? null,
     homepage: repo?.homepage || null,
     stars: repo?.stargazers_count ?? 0,
@@ -121,6 +122,21 @@ export async function getProjects(): Promise<Project[]> {
   } catch (error) {
     console.error(error);
     return fallbackProjects();
+  }
+}
+
+/** Public profile numbers for the stats row; null when GitHub is unreachable. */
+export async function getGitHubStats(): Promise<{ publicRepos: number; followers: number } | null> {
+  "use cache";
+  cacheLife(GITHUB_CACHE_LIFE);
+  cacheTag(GITHUB_CACHE_TAG);
+
+  try {
+    const user = await gh<{ public_repos: number; followers: number }>(`/users/${USERNAME}`);
+    return { publicRepos: user.public_repos, followers: user.followers };
+  } catch (error) {
+    console.error(error);
+    return null;
   }
 }
 

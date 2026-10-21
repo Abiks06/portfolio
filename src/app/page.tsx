@@ -1,118 +1,212 @@
-import { getContributions, getProjects } from "@/lib/github";
+import { Heatmap } from "@/components/activity";
+import { Hero } from "@/components/hero";
+import { Nav } from "@/components/nav";
+import { Projects } from "@/components/projects";
+import { CountUp, Reveal } from "@/components/reveal";
+import { Timeline } from "@/components/timeline";
+import { getContributions, getGitHubStats, getProjects } from "@/lib/github";
 import { formatRange, resume } from "@/lib/resume";
 
-// Temporary data preview: every section renders real data so the data layer
-// can be verified. Design and motion replace this markup in the next step.
-
-function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+function SectionHeading({ index, title, kicker }: { index: string; title: string; kicker?: string }) {
   return (
-    <section id={id} className="border-t border-foreground/10 py-12">
-      <h2 className="mb-6 font-mono text-sm uppercase tracking-widest text-foreground/60">{title}</h2>
-      {children}
-    </section>
+    <Reveal className="mb-12 flex flex-col gap-3 border-t border-line pt-6 sm:mb-16 sm:flex-row sm:items-baseline sm:justify-between">
+      <h2 className="font-display text-5xl leading-none tracking-[-0.01em] sm:text-7xl">
+        <span className="mr-4 align-top font-mono text-xs tracking-wider text-accent">{index}</span>
+        {title}
+      </h2>
+      {kicker && <p className="max-w-sm text-sm leading-relaxed text-ink-2 sm:text-right">{kicker}</p>}
+    </Reveal>
   );
 }
 
 export default async function Home() {
-  const [projects, contributions] = await Promise.all([getProjects(), getContributions()]);
-  const { basics, education, work, leadership, skills, certificates } = resume;
+  const [projects, contributions, stats] = await Promise.all([getProjects(), getContributions(), getGitHubStats()]);
+  const { basics, education, work, leadership, skills, certificates, languages } = resume;
+
+  const [firstName, ...rest] = basics.name.split(" ");
+  const lastName = rest.at(-1) ?? "";
+  const university = education[0];
+  const cwa = Number(university.score?.match(/[\d.]+/)?.[0] ?? 0);
+  const internships = work.filter((w) => /intern/i.test(w.position)).length;
+
+  const statItems = [
+    contributions && { value: contributions.total, label: "Contributions this year" },
+    stats && { value: stats.publicRepos, label: "Public repositories" },
+    { value: internships, label: "Internships at banks" },
+    cwa && { value: cwa, decimals: 2, label: "Cumulative weighted average" },
+  ].filter(Boolean) as { value: number; decimals?: number; label: string }[];
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-16 sm:px-6">
-      <header className="pb-12">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{basics.name}</h1>
-        <p className="mt-2 text-lg text-foreground/70">{basics.label}</p>
-        <p className="mt-6 max-w-2xl leading-relaxed">{basics.summary}</p>
-        <nav className="mt-6 flex gap-4 text-sm underline underline-offset-4">
-          {basics.profiles.map((p) => (
-            <a key={p.network} href={p.url}>{p.network}</a>
-          ))}
-          <a href={`mailto:${basics.email}`}>Email</a>
-        </nav>
-      </header>
+    <>
+      <Nav initials={`${firstName[0]}${lastName[0]}`} />
+      <main id="top" className="mx-auto w-full max-w-6xl px-4 sm:px-8">
+        <Hero
+          firstName={firstName}
+          lastName={lastName}
+          eyebrow={`${university.area} · ${university.institution} · Class of ${university.endDate?.slice(0, 4)}`}
+          label={basics.label}
+          summary={basics.summary}
+          email={basics.email}
+        />
 
-      <Section id="projects" title={`Projects (${projects.length})`}>
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {projects.map((p) => (
-            <li key={p.slug} className="rounded-lg border border-foreground/10 p-5">
-              <h3 className="font-medium">
-                {p.name} {p.featured && <span className="text-xs text-foreground/50">· featured</span>}
-              </h3>
-              {p.description && <p className="mt-1 text-sm text-foreground/70">{p.description}</p>}
-              {p.languages.length > 0 && (
-                <p className="mt-3 font-mono text-xs text-foreground/50">{p.languages.map((l) => l.name).join(" · ")}</p>
-              )}
-              <p className="mt-3 flex gap-3 text-sm underline underline-offset-4">
-                {p.url && <a href={p.url}>Code</a>}
-                {p.homepage && <a href={p.homepage}>Live demo</a>}
+        <section aria-label="At a glance" className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-line bg-line lg:grid-cols-4">
+          {statItems.map((s, i) => (
+            <Reveal key={s.label} delay={i * 0.08} className="bg-paper p-6 sm:p-8">
+              <p className="font-display text-5xl leading-none sm:text-6xl">
+                <CountUp value={s.value} decimals={s.decimals} />
               </p>
-            </li>
+              <p className="mt-3 text-sm text-ink-2">{s.label}</p>
+            </Reveal>
           ))}
-        </ul>
-      </Section>
+        </section>
 
-      <Section id="activity" title="GitHub activity">
-        {contributions ? (
-          <p>{contributions.total} contributions in the last year</p>
-        ) : (
-          <p className="text-sm text-foreground/60">Add GITHUB_TOKEN to .env.local to load the contribution calendar.</p>
-        )}
-      </Section>
+        <section id="work" className="scroll-mt-20 pt-28 sm:pt-40">
+          <SectionHeading
+            index="01"
+            title="Selected work"
+            kicker="Pulled live from GitHub. Tap a project for the full story."
+          />
+          <Projects projects={projects} />
 
-      <Section id="experience" title="Experience">
-        <ol className="space-y-8">
-          {work.map((job) => (
-            <li key={`${job.name}-${job.startDate}`}>
-              <h3 className="font-medium">{job.position} · {job.name}</h3>
-              <p className="text-sm text-foreground/60">{formatRange(job.startDate, job.endDate)}</p>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-                {job.highlights.map((h) => <li key={h}>{h}</li>)}
-              </ul>
-            </li>
-          ))}
-        </ol>
-      </Section>
+          {contributions && (
+            <Reveal className="mt-16 rounded-3xl border border-line p-6 sm:p-8">
+              <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className="font-display text-2xl">GitHub activity</h3>
+                <a href={basics.profiles.find((p) => p.network === "GitHub")?.url} className="text-sm text-ink-2 underline-offset-4 hover:text-ink hover:underline">
+                  @{basics.profiles.find((p) => p.network === "GitHub")?.username} ↗
+                </a>
+              </div>
+              <Heatmap days={contributions.days} total={contributions.total} />
+            </Reveal>
+          )}
+        </section>
 
-      <Section id="leadership" title="Leadership">
-        <ol className="space-y-8">
-          {leadership.map((role) => (
-            <li key={role.position}>
-              <h3 className="font-medium">{role.position}</h3>
-              <p className="text-sm text-foreground/60">
-                {role.organization} · {formatRange(role.startDate, role.endDate)}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </Section>
+        <section id="experience" className="scroll-mt-20 pt-28 sm:pt-40">
+          <SectionHeading index="02" title="Experience" kicker="Internships across three of Ghana's largest banks." />
+          <Timeline work={work} />
 
-      <Section id="education" title="Education">
-        {education.map((e) => (
-          <div key={e.institution} className="mb-6">
-            <h3 className="font-medium">{e.studyType} {e.area} · {e.institution}</h3>
-            <p className="text-sm text-foreground/60">
-              {formatRange(e.startDate, e.endDate)}{e.score && ` · ${e.score}`}
-            </p>
-          </div>
-        ))}
-      </Section>
-
-      <Section id="skills" title="Skills">
-        <dl className="grid gap-4 sm:grid-cols-2">
-          {skills.map((s) => (
-            <div key={s.name}>
-              <dt className="font-medium">{s.name}</dt>
-              <dd className="text-sm text-foreground/70">{s.keywords.join(", ")}</dd>
+          <div className="mt-24">
+            <Reveal>
+              <h3 className="mb-8 font-mono text-xs uppercase tracking-[0.18em] text-ink-3">Leading teams</h3>
+            </Reveal>
+            <div className="grid gap-4 md:grid-cols-2">
+              {leadership.map((role, i) => (
+                <Reveal key={role.position} delay={i * 0.1} className="flex flex-col rounded-3xl bg-paper-2 p-6 sm:p-8">
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-display text-6xl leading-none text-accent">
+                      <CountUp value={role.teamSize ?? 0} />
+                    </span>
+                    <span className="text-sm text-ink-2">person team</span>
+                  </div>
+                  <h4 className="mt-6 font-display text-2xl leading-tight sm:text-3xl">{role.position}</h4>
+                  <p className="mt-1 text-sm text-ink-3">
+                    {role.organization} · {formatRange(role.startDate, role.endDate)}
+                  </p>
+                  <ul className="mt-5 space-y-2.5 text-sm leading-relaxed text-ink-2">
+                    {role.highlights.map((h) => (
+                      <li key={h} className="flex gap-3">
+                        <span className="mt-2 size-1 shrink-0 rounded-full bg-ink-3" />
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                </Reveal>
+              ))}
             </div>
-          ))}
-        </dl>
-      </Section>
+          </div>
+        </section>
 
-      <Section id="certificates" title="Certificates">
-        <ul className="space-y-1 text-sm">
-          {certificates.map((c) => <li key={c.name}>{c.name} · {c.issuer}</li>)}
-        </ul>
-      </Section>
-    </main>
+        <section id="about" className="scroll-mt-20 pt-28 sm:pt-40">
+          <SectionHeading index="03" title="Education & skills" />
+          <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
+            <div className="space-y-10">
+              {education.map((e, i) => (
+                <Reveal key={e.institution} delay={i * 0.1}>
+                  <p className="font-mono text-xs uppercase tracking-wider text-ink-3">{formatRange(e.startDate, e.endDate)}</p>
+                  <h3 className="mt-2 font-display text-3xl leading-tight">{e.institution}</h3>
+                  <p className="mt-1 text-ink-2">
+                    {e.studyType} {e.area}
+                    {e.score && <span className="ml-2 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-on-accent">{e.score}</span>}
+                  </p>
+                  {e.courses && (
+                    <ul className="mt-4 flex flex-wrap gap-1.5">
+                      {e.courses.map((c) => (
+                        <li key={c} className="rounded-full border border-line px-3 py-1 text-xs text-ink-2">
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Reveal>
+              ))}
+
+              <Reveal>
+                <h3 className="font-mono text-xs uppercase tracking-[0.18em] text-ink-3">Certifications</h3>
+                <ul className="mt-4 divide-y divide-line border-y border-line">
+                  {certificates.map((c) => (
+                    <li key={c.name} className="flex items-baseline justify-between gap-4 py-3">
+                      <span>{c.name}</span>
+                      <span className="shrink-0 text-right text-xs text-ink-3">{c.issuer}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
+            </div>
+
+            <div>
+              <dl className="divide-y divide-line border-y border-line">
+                {skills.map((s, i) => (
+                  <Reveal key={s.name} delay={i * 0.05} className="grid gap-2 py-5 sm:grid-cols-[9rem_1fr] sm:gap-6">
+                    <dt className="font-mono text-xs uppercase tracking-wider text-ink-3 sm:pt-1">{s.name}</dt>
+                    <dd className="flex flex-wrap gap-x-4 gap-y-1">
+                      {s.keywords.map((k) => (
+                        <span key={k} className="transition-colors duration-200 hover:text-accent">
+                          {k}
+                        </span>
+                      ))}
+                    </dd>
+                  </Reveal>
+                ))}
+              </dl>
+              <Reveal className="mt-8 text-sm text-ink-2">
+                Speaks {languages.map((l) => `${l.language} (${l.fluency.toLowerCase()})`).join(", ")}.
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        <section id="contact" className="scroll-mt-20 py-28 sm:py-40">
+          <Reveal className="border-t border-line pt-10">
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink-3">04 · Contact</p>
+            <h2 className="mt-6 font-display text-[clamp(3rem,9vw,7.5rem)] leading-[0.95] tracking-[-0.02em]">
+              Let&apos;s build
+              <br />
+              <span className="italic text-accent">something solid.</span>
+            </h2>
+            <a
+              href={`mailto:${basics.email}`}
+              className="group mt-10 inline-flex items-center gap-3 text-lg sm:text-2xl"
+            >
+              <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-1 transition-[background-size] duration-500 ease-out-expo group-hover:bg-[length:100%_1px]">
+                {basics.email}
+              </span>
+              <span className="transition-transform duration-300 ease-out-expo group-hover:translate-x-1">→</span>
+            </a>
+            <ul className="mt-8 flex gap-6 text-sm text-ink-2">
+              {basics.profiles.map((p) => (
+                <li key={p.network}>
+                  <a href={p.url} target="_blank" rel="noreferrer" className="transition-colors hover:text-ink">
+                    {p.network} ↗
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        </section>
+      </main>
+      <footer className="mx-auto w-full max-w-6xl border-t border-line px-4 py-8 text-xs text-ink-3 sm:px-8">
+        {basics.name} · {basics.location.city} · Projects sync from GitHub
+      </footer>
+    </>
   );
 }
