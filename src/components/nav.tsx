@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionValueEvent, useScroll } from "motion/react";
+import { m, useMotionValueEvent, useScroll } from "motion/react";
 import { useState } from "react";
 
 const LINKS = [
@@ -23,15 +23,16 @@ export function Nav({ initials }: { initials: string }) {
   });
 
   return (
-    <motion.header
+    <m.header
       className={`sticky top-0 z-40 transition-[background-color,border-color] duration-300 ${scrolled ? "border-b border-line bg-paper/80 backdrop-blur-md" : "border-b border-transparent"}`}
       animate={{ y: hidden ? "-100%" : "0%" }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-8">
-        <a href="#top" className="font-display text-2xl italic" aria-label="Back to top">
+        <a href="#top" className="font-display text-2xl italic">
           {initials}
           <span className="text-accent">.</span>
+          <span className="sr-only"> Back to top</span>
         </a>
         <ul className="flex gap-5 text-sm text-ink-2 sm:gap-8">
           {LINKS.map((l) => (
@@ -43,6 +44,6 @@ export function Nav({ initials }: { initials: string }) {
           ))}
         </ul>
       </nav>
-    </motion.header>
+    </m.header>
   );
 }

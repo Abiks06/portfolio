@@ -6,9 +6,10 @@
   --paper-2: #ede7dc;
   --ink: #1b1a17;
   --ink-2: #57524a;
-  --ink-3: #8a847a;
+  /* ink-3 and accent are tuned to pass WCAG AA (4.5:1) at small sizes. */
+  --ink-3: #6a645a;
   --line: #d9d1c4;
-  --accent: #e3572b;
+  --accent: #cc4a1f;
   --on-accent: #ffffff;
   color-scheme: light;
 }
@@ -19,7 +20,7 @@
     --paper-2: #1c1a17;
     --ink: #eee8de;
     --ink-2: #b3ab9f;
-    --ink-3: #7d766b;
+    --ink-3: #8f887c;
     --line: #2e2a25;
     --accent: #f26b3d;
     --on-accent: #12110f;
@@ -54,6 +55,43 @@ body {
 ::selection {
   background: var(--accent);
   color: var(--on-accent);
+}
+
+/* Hero intro. Pure CSS so the text paints with the HTML instead of waiting for JavaScript. */
+@keyframes rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+/* 0.01, not 0: browsers skip fully transparent elements when timing
+   Largest Contentful Paint, so a 0 start would push LCP onto later content. */
+@keyframes fade-up {
+  from {
+    opacity: 0.01;
+    transform: translateY(16px);
+  }
+}
+@keyframes fade-scale {
+  from {
+    opacity: 0.01;
+    transform: scale(0.92);
+  }
+}
+.anim-rise {
+  animation: rise 1.1s var(--ease-out-expo) both;
+}
+.anim-fade-up {
+  animation: fade-up 0.9s var(--ease-out-expo) both;
+}
+.anim-fade-scale {
+  animation: fade-scale 1.4s var(--ease-out-expo) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-rise,
+  .anim-fade-up,
+  .anim-fade-scale {
+    animation: none;
+  }
 }
 
 /* Lenis smooth scroll */

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useSpring } from "motion/react";
+import { m, useScroll, useSpring } from "motion/react";
 import { useRef } from "react";
 import { formatRange, type Work } from "@/lib/resume";
 import { Reveal } from "./reveal";
@@ -14,7 +14,7 @@ export function Timeline({ work }: { work: Work[] }) {
   return (
     <ol ref={ref} className="relative space-y-14 pl-8 sm:pl-12">
       <span className="absolute left-[5px] top-2 bottom-2 w-px bg-line sm:left-[7px]" aria-hidden="true" />
-      <motion.span
+      <m.span
         className="absolute left-[5px] top-2 bottom-2 w-px origin-top bg-accent sm:left-[7px]"
         style={{ scaleY }}
         aria-hidden="true"

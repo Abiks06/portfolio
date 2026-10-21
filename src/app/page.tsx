@@ -6,12 +6,13 @@ import { CountUp, Reveal } from "@/components/reveal";
 import { Timeline } from "@/components/timeline";
 import { getContributions, getGitHubStats, getProjects } from "@/lib/github";
 import { formatRange, resume } from "@/lib/resume";
+import { SITE_URL } from "@/lib/site";
 
 function SectionHeading({ index, title, kicker }: { index: string; title: string; kicker?: string }) {
   return (
     <Reveal className="mb-12 flex flex-col gap-3 border-t border-line pt-6 sm:mb-16 sm:flex-row sm:items-baseline sm:justify-between">
       <h2 className="font-display text-5xl leading-none tracking-[-0.01em] sm:text-7xl">
-        <span className="mr-4 align-top font-mono text-xs tracking-wider text-accent">{index}</span>
+        <span className="mr-4 align-top font-mono text-xs tracking-wider text-ink-2">{index}</span>
         {title}
       </h2>
       {kicker && <p className="max-w-sm text-sm leading-relaxed text-ink-2 sm:text-right">{kicker}</p>}
@@ -36,8 +37,28 @@ export default async function Home() {
     cwa && { value: cwa, decimals: 2, label: "Cumulative weighted average" },
   ].filter(Boolean) as { value: number; decimals?: number; label: string }[];
 
+  // schema.org Person, so search engines can show a rich result for the name.
+  const personJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: basics.name,
+    url: SITE_URL,
+    email: `mailto:${basics.email}`,
+    jobTitle: basics.label,
+    image: basics.image,
+    address: { "@type": "PostalAddress", addressLocality: basics.location.city, addressCountry: basics.location.countryCode },
+    alumniOf: { "@type": "CollegeOrUniversity", name: university.institution },
+    knowsAbout: skills.flatMap((s) => s.keywords).slice(0, 20),
+    sameAs: basics.profiles.map((p) => p.url),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        // Escape "<" so no string in the data can close the script tag.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c") }}
+      />
       <Nav initials={`${firstName[0]}${lastName[0]}`} />
       <main id="top" className="mx-auto w-full max-w-6xl px-4 sm:px-8">
         <Hero

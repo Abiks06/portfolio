@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { resume } from "@/lib/resume";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -13,11 +14,30 @@ const instrument = Instrument_Serif({
   style: ["normal", "italic"],
 });
 
-const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
+// Only used for small labels, so it shouldn't compete with the hero fonts for bandwidth.
+const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], preload: false });
 
+const title = `${resume.basics.name} · ${resume.basics.label}`;
+const description =
+  "CS undergrad at Academic City University with internships at Ecobank, Access Bank and Stanbic. Secure full-stack apps, Spring Boot backends and real-time 3D.";
+
+// The share image comes from app/opengraph-image.png.
 export const metadata: Metadata = {
-  title: `${resume.basics.name} · Portfolio`,
-  description: resume.basics.summary,
+  metadataBase: new URL(SITE_URL),
+  title,
+  description,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "profile",
+    url: "/",
+    title,
+    description,
+    siteName: resume.basics.name,
+    firstName: "Ayomide",
+    lastName: "Abikoye",
+    locale: "en_GB",
+  },
+  twitter: { card: "summary_large_image", title, description },
 };
 
 export const viewport: Viewport = {

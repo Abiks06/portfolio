@@ -1,6 +1,6 @@
 "use client";
 
-import { animate, motion, useInView } from "motion/react";
+import { animate, m, useInView } from "motion/react";
 import { useEffect, useRef } from "react";
 
 /** Fades and lifts its children into place the first time they scroll into view. */
@@ -14,7 +14,7 @@ export function Reveal({
   className?: string;
 }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -22,7 +22,7 @@ export function Reveal({
       transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 

@@ -4,12 +4,12 @@ import { useLenis } from "lenis/react";
 import {
   AnimatePresence,
   LayoutGroup,
-  motion,
+  m,
   useMotionValue,
   useReducedMotion,
   useSpring,
 } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/lib/github";
 import { formatDate } from "@/lib/resume";
 import { useMediaQuery } from "@/lib/use-media-query";
@@ -35,7 +35,7 @@ function Tilt({ children }: { children: React.ReactNode }) {
   const enabled = fine && !reduced;
 
   return (
-    <motion.div
+    <m.div
       className="h-full"
       style={{ rotateX: rx, rotateY: ry, transformPerspective: 900 }}
       onPointerMove={(e) => {
@@ -55,7 +55,7 @@ function Tilt({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -75,7 +75,7 @@ function LanguageChips({ project, limit = 3 }: { project: Project; limit?: numbe
 function ProjectCard({ project, index, onOpen, hidden }: { project: Project; index: number; onOpen: () => void; hidden: boolean }) {
   return (
     <Tilt>
-      <motion.button
+      <m.button
         layoutId={`card-${project.slug}`}
         onClick={onOpen}
         style={{ borderRadius: 20, visibility: hidden ? "hidden" : "visible" }}
@@ -100,23 +100,46 @@ function ProjectCard({ project, index, onOpen, hidden }: { project: Project; ind
             ↗
           </span>
         </div>
-      </motion.button>
+      </m.button>
     </Tilt>
   );
 }
 
 function ProjectDetail({ project, index, onClose }: { project: Project; index: number; onClose: () => void }) {
   const total = project.languages.reduce((sum, l) => sum + l.bytes, 0);
+  const closeButton = useRef<HTMLButtonElement>(null);
 
+  // Move focus into the dialog, keep Tab inside it, and hand focus back to the card on close.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const opener = document.activeElement as HTMLElement | null;
+    closeButton.current?.focus({ preventScroll: true });
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key !== "Tab") return;
+      const dialog = closeButton.current?.closest("[role=dialog]");
+      const focusable = dialog?.querySelectorAll<HTMLElement>("a[href], button");
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      opener?.focus({ preventScroll: true });
+    };
   }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={project.name}>
-      <motion.div
+      <m.div
         className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -124,12 +147,12 @@ function ProjectDetail({ project, index, onClose }: { project: Project; index: n
         transition={{ duration: 0.3 }}
         onClick={onClose}
       />
-      <motion.article
+      <m.article
         layoutId={`card-${project.slug}`}
         style={{ borderRadius: 24 }}
         className="relative max-h-[90svh] w-full max-w-3xl overflow-hidden bg-paper-2"
       >
-        <motion.div
+        <m.div
           data-lenis-prevent
           className="max-h-[90svh] overflow-y-auto overscroll-contain p-6 sm:p-10"
           initial={{ opacity: 0 }}
@@ -139,6 +162,7 @@ function ProjectDetail({ project, index, onClose }: { project: Project; index: n
           <div className="flex items-start justify-between gap-4">
             <span className="font-display text-5xl leading-none text-ink-3">{pad(index)}</span>
             <button
+              ref={closeButton}
               onClick={onClose}
               aria-label="Close"
               className="grid size-10 place-items-center rounded-full border border-line text-lg transition-colors hover:border-ink active:scale-95"
@@ -170,7 +194,7 @@ function ProjectDetail({ project, index, onClose }: { project: Project; index: n
               <p className="font-mono text-xs uppercase tracking-wider text-ink-3">Languages</p>
               <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-line">
                 {project.languages.map((l, i) => (
-                  <motion.span
+                  <m.span
                     key={l.name}
                     className="h-full"
                     style={{ background: i === 0 ? "var(--accent)" : `color-mix(in oklab, var(--ink) ${70 - i * 20}%, transparent)` }}
@@ -212,8 +236,8 @@ function ProjectDetail({ project, index, onClose }: { project: Project; index: n
               </a>
             )}
           </div>
-        </motion.div>
-      </motion.article>
+        </m.div>
+      </m.article>
     </div>
   );
 }
@@ -250,19 +274,19 @@ export function Projects({ projects }: { projects: Project[] }) {
             className={`relative rounded-full px-4 py-1.5 text-sm transition-colors duration-200 ${filter === f ? "text-paper" : "text-ink-2 hover:text-ink"}`}
           >
             {filter === f && (
-              <motion.span layoutId="filter-pill" className="absolute inset-0 rounded-full bg-ink" transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+              <m.span layoutId="filter-pill" className="absolute inset-0 rounded-full bg-ink" transition={{ type: "spring", stiffness: 380, damping: 32 }} />
             )}
             <span className="relative">{f}</span>
           </button>
         ))}
       </div>
 
-      <motion.ul layout className="grid gap-4 sm:grid-cols-2">
+      <m.ul layout className="grid gap-4 sm:grid-cols-2">
         <AnimatePresence mode="popLayout" initial={false}>
           {visible.map((p) => {
             const index = projects.indexOf(p);
             return (
-              <motion.li
+              <m.li
                 key={p.slug}
                 layout
                 initial={{ opacity: 0, scale: 0.96 }}
@@ -271,11 +295,11 @@ export function Projects({ projects }: { projects: Project[] }) {
                 transition={{ duration: 0.45, ease }}
               >
                 <ProjectCard project={p} index={index} onOpen={() => setOpenSlug(p.slug)} hidden={p.slug === openSlug} />
-              </motion.li>
+              </m.li>
             );
           })}
         </AnimatePresence>
-      </motion.ul>
+      </m.ul>
 
       <AnimatePresence>
         {open && <ProjectDetail key={open.slug} project={open} index={openIndex} onClose={() => setOpenSlug(null)} />}
