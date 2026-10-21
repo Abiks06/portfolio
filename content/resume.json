@@ -156,6 +156,14 @@
       "keywords": ["Three.js", "React Three Fiber", "GLSL", "Computer Graphics", "FSM"]
     },
     {
+      "repo": "issue-logger",
+      "name": "Issue Logger"
+    },
+    {
+      "repo": "easystore-ui",
+      "name": "EasyStore"
+    },
+    {
       "name": "License Plate Detection",
       "featured": false,
       "startDate": "2026-02",
