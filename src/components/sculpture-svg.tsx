@@ -1,43 +1,72 @@
-// Flat SVG version of the hero sculpture: an icosahedron seen face-on, with a
-// wireframe shell and an orbit. Shown on phones, for reduced motion, and while
-// the WebGL scene loads, so the swap is seamless.
+// SVG render of the hero sculpture's first WebGL frame, projected from the
+// shared numbers in lib/sculpture. Shown on phones, for reduced motion, and
+// under the WebGL canvas while it loads, so the crossfade between them is invisible.
 
-const C = 200;
-const R = 120;
-const point = (deg: number, r: number) =>
-  [C + r * Math.cos((deg * Math.PI) / 180), C + r * Math.sin((deg * Math.PI) / 180)] as const;
+import {
+  DOT_RADIUS,
+  EDGES,
+  FACES,
+  REST,
+  SHELL_SCALE,
+  VERTICES,
+  project,
+  restNormal,
+  ringPoint,
+  rotate,
+  shade,
+  shadeMix,
+  CAMERA_FOV,
+  CAMERA_Z,
+  type Vec3,
+} from "@/lib/sculpture";
 
-const V = [-90, -30, 30, 90, 150, 210].map((d) => point(d, R));
-const T = [-30, 90, 210].map((d) => point(d, R * 0.5));
-const SHELL = [-90, -30, 30, 90, 150, 210].map((d) => point(d, R * 1.32));
+const fmt = (n: number) => n.toFixed(1);
+const at = (v: Vec3) => project(v).map(fmt).join(",");
 
-// Each face with a brightness, lit from the top right.
-const FACES: [readonly (readonly [number, number])[], number][] = [
-  [[V[0], V[1], T[0]], 0.95],
-  [[V[1], V[2], T[0]], 0.75],
-  [[V[2], V[3], T[1]], 0.55],
-  [[V[3], V[4], T[1]], 0.45],
-  [[V[4], V[5], T[2]], 0.6],
-  [[V[5], V[0], T[2]], 0.85],
-  [[V[0], T[0], T[2]], 1],
-  [[V[2], T[0], T[1]], 0.68],
-  [[V[4], T[1], T[2]], 0.52],
-  [[T[0], T[1], T[2]], 0.8],
-];
+const body = VERTICES.map((v) => rotate(v, REST));
+const shell = VERTICES.map((v) => rotate([v[0] * SHELL_SCALE, v[1] * SHELL_SCALE, v[2] * SHELL_SCALE], REST));
 
-const pts = (p: readonly (readonly [number, number])[]) => p.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+const faces = FACES.filter((f) => restNormal(f)[2] > 0).map((f) => {
+  const { toward, amount } = shadeMix(shade(restNormal(f)));
+  return {
+    points: f.map((i) => at(body[i])).join(" "),
+    fill: `color-mix(in srgb, var(--accent), ${toward} ${(amount * 100).toFixed(1)}%)`,
+  };
+});
 
-export function SculptureSvg() {
+// Split edges and ring segments into behind/in front of the body, so the body occludes them as in WebGL.
+const edges = EDGES.map(([a, b]) => ({ a: project(shell[a]), b: project(shell[b]), back: shell[a][2] + shell[b][2] < 0 }));
+
+const RING_STEPS = 96;
+const ring = Array.from({ length: RING_STEPS }, (_, i) => {
+  const p0 = ringPoint((i / RING_STEPS) * 2 * Math.PI);
+  const p1 = ringPoint(((i + 1) / RING_STEPS) * 2 * Math.PI);
+  return { a: project(p0), b: project(p1), back: p0[2] + p1[2] < 0 };
+});
+
+const dotCenter = ringPoint(0);
+const dotPx = (() => {
+  const f = 1 / Math.tan(((CAMERA_FOV / 2) * Math.PI) / 180);
+  return (200 * f * DOT_RADIUS) / (CAMERA_Z - dotCenter[2]);
+})();
+
+type Seg = { a: [number, number]; b: [number, number] };
+const path = (segs: Seg[]) => segs.map((s) => `M${fmt(s.a[0])} ${fmt(s.a[1])}L${fmt(s.b[0])} ${fmt(s.b[1])}`).join("");
+
+const line = { fill: "none", stroke: "var(--ink)", vectorEffect: "non-scaling-stroke" as const };
+
+export function SculptureSvg({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 400 400" className="h-full w-full" aria-hidden="true">
-      <polygon points={pts(SHELL)} fill="none" stroke="var(--ink)" strokeOpacity={0.18} />
-      {FACES.map(([face, light], i) => (
-        <polygon key={i} points={pts(face)} fill="var(--accent)" fillOpacity={light} stroke="var(--paper)" strokeOpacity={0.35} />
+    <svg viewBox="0 0 400 400" className={className ?? "h-full w-full"} aria-hidden="true">
+      <path d={path(edges.filter((e) => e.back))} {...line} strokeOpacity={0.18} />
+      <path d={path(ring.filter((s) => s.back))} {...line} strokeOpacity={0.35} />
+      {faces.map((f, i) => (
+        // Stroke in the face's own colour closes the anti-aliasing seams between neighbouring faces.
+        <polygon key={i} points={f.points} fill={f.fill} stroke={f.fill} strokeWidth={0.75} strokeLinejoin="round" />
       ))}
-      <g transform={`rotate(-18 ${C} ${C})`}>
-        <ellipse cx={C} cy={C} rx={190} ry={50} fill="none" stroke="var(--ink)" strokeOpacity={0.35} />
-        <circle cx={C + 190} cy={C} r={6} fill="var(--accent)" />
-      </g>
+      <path d={path(edges.filter((e) => !e.back))} {...line} strokeOpacity={0.18} />
+      <path d={path(ring.filter((s) => !s.back))} {...line} strokeOpacity={0.35} />
+      <circle cx={fmt(project(dotCenter)[0])} cy={fmt(project(dotCenter)[1])} r={fmt(dotPx)} fill="var(--accent)" />
     </svg>
   );
 }

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { SculptureSvg } from "./sculpture-svg";
 
 // three.js is ~240 KB gzipped, so it's only fetched once this component decides to use it.
-const HeroScene = dynamic(() => import("./hero-scene"), { ssr: false, loading: () => <SculptureSvg /> });
+const HeroScene = dynamic(() => import("./hero-scene"), { ssr: false });
 
 type NetworkInformation = { saveData?: boolean; effectiveType?: string };
 
@@ -20,9 +20,14 @@ function shouldUseWebGL() {
   );
 }
 
-/** Static SVG sculpture that upgrades to the live WebGL one once the page has finished loading and gone idle. */
+/**
+ * Static SVG sculpture that upgrades to the live WebGL one once the page has
+ * loaded and gone idle. The SVG is the scene's first frame, so the two crossfade
+ * without a visible jump; the scene only starts moving after the fade.
+ */
 export function Hero3D() {
   const [live, setLive] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!shouldUseWebGL()) return;
@@ -41,5 +46,16 @@ export function Hero3D() {
     };
   }, []);
 
-  return live ? <HeroScene /> : <SculptureSvg />;
+  const fade = "absolute inset-0 transition-opacity duration-700 ease-out";
+
+  return (
+    <div className="relative h-full w-full">
+      <SculptureSvg className={`${fade} h-full w-full ${ready ? "opacity-0" : "opacity-100"}`} />
+      {live && (
+        <div className={`${fade} ${ready ? "opacity-100" : "opacity-0"}`}>
+          <HeroScene onReady={() => setReady(true)} />
+        </div>
+      )}
+    </div>
+  );
 }
