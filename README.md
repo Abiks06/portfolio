@@ -2,6 +2,8 @@
 
 Personal portfolio for Ayomide Abikoye, CS undergrad at Academic City University.
 
+**Live:** https://ayomide-abikoye.vercel.app
+
 ## How content updates
 
 - **Projects** come from GitHub: any public repo under [Abiks06](https://github.com/Abiks06) tagged with the `portfolio` topic. Extra detail (highlights, dates, featured flag) lives in `content/resume.json` under `projects`, matched by `repo` name.
