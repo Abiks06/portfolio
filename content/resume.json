@@ -168,10 +168,10 @@
       "name": "PlateSight: License Plate Detection",
       "featured": true,
       "highlights": [
-        "YOLO11 neural network fine-tuned for license plates with a reproducible PyTorch/Ultralytics pipeline and a one-click GPU training notebook.",
-        "Runs entirely in the browser: ONNX Runtime Web in a Web Worker on multi-threaded WebAssembly, about 30 ms per image, with nothing uploaded.",
-        "INT8 static quantisation cut the model 70% (10.5 MB to 3.1 MB) for a 0.3-point mAP@50 cost, behind an automatic accuracy gate.",
-        "Live webcam detection and one-click plate redaction for privacy-safe sharing, under a strict Content-Security-Policy."
+        "Two YOLO11 detectors trained on a cloud GPU with a reproducible PyTorch/Ultralytics pipeline: 0.87–0.89 mAP@50 on 2,065 held-out real-world photos.",
+        "Runs entirely in the browser: ONNX Runtime Web in a Web Worker on multi-threaded WebAssembly, with nothing uploaded.",
+        "Every compression option passes an accuracy gate on two test sets: INT8 was rejected (up to 10 points lost), float16 weights halved downloads with no loss.",
+        "Live webcam detection and one-click plate redaction for privacy-safe sharing, scoring 100 on Lighthouse accessibility, best practices and SEO."
       ],
       "keywords": ["Python", "PyTorch", "YOLO", "ONNX Runtime", "WebAssembly", "React"]
     }
