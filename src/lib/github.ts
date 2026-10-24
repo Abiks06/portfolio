@@ -45,10 +45,10 @@ type GitHubRepo = {
   archived: boolean;
 };
 
-function headers(): HeadersInit {
+function headers(accept = "application/vnd.github+json"): HeadersInit {
   const token = process.env.GITHUB_TOKEN;
   return {
-    Accept: "application/vnd.github+json",
+    Accept: accept,
     "X-GitHub-Api-Version": "2022-11-28",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
@@ -64,7 +64,40 @@ function prettify(repoName: string) {
   return repoName.replace(/[-_]+/g, " ");
 }
 
-function toProject(repo: GitHubRepo | null, extra: ResumeProject | undefined, languages: Record<string, number>): Project {
+/** Where a project repo keeps its own card data (all fields optional). */
+const CARD_PATH = ".github/portfolio.json";
+
+type Card = Partial<Omit<ResumeProject, "repo">>;
+
+const isDate = (v: unknown): v is string => typeof v === "string" && /^\d{4}(-\d{2})?$/.test(v);
+const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
+
+/** Keeps only well-formed fields, so a typo in one repo's file can't break the page. */
+function parseCard(raw: unknown): Card {
+  if (!raw || typeof raw !== "object") return {};
+  const r = raw as Record<string, unknown>;
+  return {
+    ...(typeof r.name === "string" && { name: r.name }),
+    ...(typeof r.featured === "boolean" && { featured: r.featured }),
+    ...(typeof r.description === "string" && { description: r.description }),
+    ...(isDate(r.startDate) && { startDate: r.startDate }),
+    ...(isDate(r.endDate) && { endDate: r.endDate }),
+    ...(isStrings(r.highlights) && { highlights: r.highlights }),
+    ...(isStrings(r.keywords) && { keywords: r.keywords }),
+  };
+}
+
+/** The repo's own .github/portfolio.json, or nothing when it has none. */
+async function repoCard(repo: string): Promise<Card> {
+  try {
+    const res = await fetch(`${API}/repos/${USERNAME}/${repo}/contents/${CARD_PATH}`, { headers: headers("application/vnd.github.raw+json") });
+    return res.ok ? parseCard(await res.json()) : {};
+  } catch {
+    return {};
+  }
+}
+
+function toProject(repo: GitHubRepo | null, extra: Card | undefined, languages: Record<string, number>): Project {
   const name = extra?.name ?? prettify(repo?.name ?? "");
   return {
     slug: (repo?.name ?? name).toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -94,8 +127,9 @@ function fallbackProjects(): Project[] {
 }
 
 /**
- * Public repos tagged with the portfolio topic, merged with the matching
- * entries in resume.json, plus resume-only projects that have no repo.
+ * Public repos tagged with the portfolio topic, each described by its own
+ * .github/portfolio.json (overridden field by field by a matching resume.json entry),
+ * plus resume-only projects that have no repo.
  * Featured first, then most recently pushed.
  */
 export async function getProjects(): Promise<Project[]> {
@@ -110,8 +144,11 @@ export async function getProjects(): Promise<Project[]> {
 
     const fromGitHub = await Promise.all(
       tagged.map(async (repo) => {
-        const languages = await gh<Record<string, number>>(`/repos/${USERNAME}/${repo.name}/languages`).catch(() => ({}));
-        return toProject(repo, byRepo.get(repo.name.toLowerCase()), languages);
+        const [languages, card] = await Promise.all([
+          gh<Record<string, number>>(`/repos/${USERNAME}/${repo.name}/languages`).catch(() => ({})),
+          repoCard(repo.name),
+        ]);
+        return toProject(repo, { ...card, ...byRepo.get(repo.name.toLowerCase()) }, languages);
       }),
     );
     const resumeOnly = resume.projects.filter((p) => !p.repo).map((p) => toProject(null, p, {}));

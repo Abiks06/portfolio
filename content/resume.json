@@ -35,13 +35,7 @@
       ],
       "activities": ["Football", "Basketball", "Coding"]
     },
-    {
-      "institution": "Morning Star High School",
-      "area": "Science",
-      "studyType": "WASSCE",
-      "startDate": "2020",
-      "endDate": "2023"
-    }
+    { "institution": "Morning Star High School", "area": "Science", "studyType": "WASSCE", "startDate": "2020", "endDate": "2023" }
   ],
   "work": [
     {
@@ -127,55 +121,7 @@
       ]
     }
   ],
-  "projects": [
-    {
-      "repo": "Secure-Analytics-Pro",
-      "name": "Secure Analytics Pro",
-      "featured": true,
-      "startDate": "2025-10",
-      "endDate": "2025-12",
-      "highlights": [
-        "Full-stack analytics platform with a secure CSV/JSON processing engine and real-time visualization dashboard.",
-        "JWT authentication and Supabase Row Level Security for strict per-user data isolation.",
-        "Containerized monorepo with automated dependency management, scoring 100% on GitHub security audits."
-      ],
-      "keywords": ["React", "Supabase", "JWT", "RLS", "Docker"]
-    },
-    {
-      "repo": "ATM-Interface-Simulator",
-      "name": "Secure ATM Interface Simulator",
-      "featured": true,
-      "startDate": "2026-03",
-      "endDate": "2026-05",
-      "highlights": [
-        "Modular 3D environment in React Three Fiber with custom GLSL shaders implementing Phong and Gouraud lighting.",
-        "Low-level graphics algorithms from scratch: Bresenham's line, cubic Bézier curves and Cohen–Sutherland clipping.",
-        "Finite state machine handling secure PIN entry, authentication and cash withdrawal.",
-        "Spatial audio and keyframe animation driven by manual 4×4 matrix transformations."
-      ],
-      "keywords": ["Three.js", "React Three Fiber", "GLSL", "Computer Graphics", "FSM"]
-    },
-    {
-      "repo": "issue-logger",
-      "name": "Issue Logger"
-    },
-    {
-      "repo": "easystore-ui",
-      "name": "EasyStore"
-    },
-    {
-      "repo": "license-plate-detection",
-      "name": "PlateSight: License Plate Detection",
-      "featured": true,
-      "highlights": [
-        "Two YOLO11 detectors trained on a cloud GPU with a reproducible PyTorch/Ultralytics pipeline: 0.87–0.89 mAP@50 on 2,065 held-out real-world photos and 0.95 on Ghanaian plates it never trained on.",
-        "Runs entirely in the browser: ONNX Runtime Web in a Web Worker on multi-threaded WebAssembly, with nothing uploaded.",
-        "Every compression option passes an accuracy gate on two test sets: INT8 was rejected (up to 10 points lost), float16 weights halved downloads with no loss.",
-        "Live webcam detection and one-click plate redaction for privacy-safe sharing, scoring 100 on Lighthouse accessibility, best practices and SEO."
-      ],
-      "keywords": ["Python", "PyTorch", "YOLO", "ONNX Runtime", "WebAssembly", "React"]
-    }
-  ],
+  "projects": [],
   "certificates": [
     { "name": "Responsive Web Design", "issuer": "freeCodeCamp" },
     { "name": "JavaScript Algorithms and Data Structures", "issuer": "freeCodeCamp" },
