@@ -21,7 +21,16 @@ export function Timeline({ work }: { work: Work[] }) {
       />
       {work.map((job) => (
         <li key={`${job.name}-${job.startDate}`} className="relative">
-          <span className="absolute -left-8 top-2 size-[11px] rounded-full border-2 border-accent bg-paper sm:-left-12 sm:size-[15px]" aria-hidden="true" />
+          <span className="absolute -left-8 top-2 grid size-[11px] place-items-center rounded-full border-2 border-accent bg-paper sm:-left-12 sm:size-[15px]" aria-hidden="true">
+            {/* Fills in as the job reaches the middle of the screen, in step with the rail. */}
+            <m.span
+              className="size-full rounded-full bg-accent"
+              initial={{ transform: "scale(0.4)", opacity: 0 }}
+              whileInView={{ transform: "scale(1)", opacity: 1 }}
+              viewport={{ once: true, margin: "0px 0px -45% 0px" }}
+              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+            />
+          </span>
           <Reveal>
             <p className="font-mono text-xs uppercase tracking-wider text-ink-3">
               {formatRange(job.startDate, job.endDate)}

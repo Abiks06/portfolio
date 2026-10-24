@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/lib/github";
 import { formatDate } from "@/lib/resume";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { OPEN_PROJECT_EVENT } from "./command-menu";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -73,15 +74,28 @@ function LanguageChips({ project, limit = 3 }: { project: Project; limit?: numbe
 }
 
 function ProjectCard({ project, index, onOpen, hidden }: { project: Project; index: number; onOpen: () => void; hidden: boolean }) {
+  const glow = useRef<HTMLSpanElement>(null);
   return (
     <Tilt>
       <m.button
         layoutId={`card-${project.slug}`}
         onClick={onOpen}
+        // A soft light that follows the pointer, painted on the glow layer itself so nothing else restyles.
+        onPointerMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          if (glow.current) {
+            glow.current.style.background = `radial-gradient(420px circle at ${e.clientX - r.left}px ${e.clientY - r.top}px, color-mix(in oklab, var(--accent) 16%, transparent), transparent 65%)`;
+          }
+        }}
         style={{ borderRadius: 20, visibility: hidden ? "hidden" : "visible" }}
-        className="group flex h-full w-full flex-col bg-paper-2 p-6 text-left transition-colors duration-300 hover:bg-[color-mix(in_oklab,var(--paper-2),var(--accent)_6%)] sm:p-8"
+        className="group relative flex h-full w-full flex-col overflow-hidden bg-paper-2 p-6 text-left transition-colors duration-300 hover:bg-[color-mix(in_oklab,var(--paper-2),var(--accent)_6%)] sm:p-8"
       >
-        <div className="flex items-start justify-between">
+        <span
+          ref={glow}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 pointer-fine:group-hover:opacity-100"
+        />
+        <div className="relative flex items-start justify-between">
           <span className="font-display text-5xl leading-none text-ink-3">{pad(index)}</span>
           {project.featured && (
             <span className="rounded-full bg-accent px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-on-accent">
@@ -89,13 +103,13 @@ function ProjectCard({ project, index, onOpen, hidden }: { project: Project; ind
             </span>
           )}
         </div>
-        <h3 className="mt-10 font-display text-3xl leading-tight sm:text-4xl">{project.name}</h3>
-        {project.description && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-2">{project.description}</p>}
-        <div className="mt-auto flex items-end justify-between gap-4 pt-8">
+        <h3 className="relative mt-10 font-display text-3xl leading-tight sm:text-4xl">{project.name}</h3>
+        {project.description && <p className="relative mt-3 line-clamp-3 text-sm leading-relaxed text-ink-2">{project.description}</p>}
+        <div className="relative mt-auto flex items-end justify-between gap-4 pt-8">
           <LanguageChips project={project} />
           <span
             aria-hidden="true"
-            className="grid size-9 shrink-0 place-items-center rounded-full border border-line transition-all duration-300 ease-out-expo group-hover:rotate-45 group-hover:border-accent group-hover:bg-accent group-hover:text-on-accent"
+            className="grid size-9 shrink-0 place-items-center rounded-full border border-line transition-[transform,background-color,border-color,color] duration-300 ease-out-expo group-hover:rotate-45 group-hover:border-accent group-hover:bg-accent group-hover:text-on-accent"
           >
             ↗
           </span>
@@ -263,6 +277,27 @@ export function Projects({ projects }: { projects: Project[] }) {
     document.documentElement.style.overflow = open ? "hidden" : "";
   }, [open, lenis]);
 
+  // "Open project" from the command menu: bring the card into view first, so the detail view
+  // visibly grows out of it, then open.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const slug = (e as CustomEvent<string>).detail;
+      if (!projects.some((p) => p.slug === slug)) return;
+      setFilter("All");
+      requestAnimationFrame(() => {
+        const card = document.getElementById(`project-${slug}`);
+        if (!card) return setOpenSlug(slug);
+        if (lenis) lenis.scrollTo(card, { offset: -140, duration: 0.9, onComplete: () => setOpenSlug(slug) });
+        else {
+          card.scrollIntoView({ block: "center" });
+          setOpenSlug(slug);
+        }
+      });
+    };
+    window.addEventListener(OPEN_PROJECT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_PROJECT_EVENT, onOpen);
+  }, [projects, lenis]);
+
   return (
     <LayoutGroup>
       <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label="Filter projects by language">
@@ -288,6 +323,8 @@ export function Projects({ projects }: { projects: Project[] }) {
             return (
               <m.li
                 key={p.slug}
+                id={`project-${p.slug}`}
+                className="scroll-mt-32"
                 layout
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}

@@ -42,6 +42,18 @@ Education, experience, leadership, certificates and skills live in `content/resu
 
 Next.js (App Router) · TypeScript · Tailwind CSS · Motion · Lenis · deployed on Vercel. GitHub data is pre-rendered and re-checked every 15 minutes, so a newly tagged repo appears with no per-repo setup. For an immediate refresh, open `/api/revalidate?secret=<REVALIDATE_SECRET>`.
 
+## Motion
+
+Motion is spent where a first visit benefits and kept out of the way of reading:
+
+- **Scroll-linked:** the hero's text and sculpture separate into layers as you scroll away; a two-row skills marquee drifts and follows your scroll speed and direction; the timeline rail draws itself and each job's dot fills as it reaches the middle of the screen; a hairline under the nav shows reading progress.
+- **On arrival:** section headings rise word by word out of a mask, matching the hero; stats count up; project cards and the contribution calendar stagger in.
+- **On the pointer (mouse and trackpad only):** project cards tilt and carry a soft spotlight; the main buttons lean toward the cursor.
+- **Feedback:** the nav marks the current section; "Copy email" confirms in place; a project card expands into its detail view.
+- **⌘K / Ctrl+K / `/`:** a command menu to jump to any section, open any project or copy the email. It opens instantly, on purpose: anything opened from the keyboard should.
+
+Everything honours `prefers-reduced-motion` (no movement, content shown in place), uses transforms and opacity only, and pauses off-screen.
+
 ## Setup
 
 1. Use Node 24 (see `.nvmrc`).

@@ -1,5 +1,8 @@
 import { Heatmap } from "@/components/activity";
+import { CommandMenu } from "@/components/command-menu";
 import { Hero } from "@/components/hero";
+import { SkillsMarquee } from "@/components/marquee";
+import { CopyEmail, KineticText, Magnetic } from "@/components/motion-bits";
 import { Nav } from "@/components/nav";
 import { Projects } from "@/components/projects";
 import { CountUp, Reveal } from "@/components/reveal";
@@ -13,7 +16,7 @@ function SectionHeading({ index, title, kicker }: { index: string; title: string
     <Reveal className="mb-12 flex flex-col gap-3 border-t border-line pt-6 sm:mb-16 sm:flex-row sm:items-baseline sm:justify-between">
       <h2 className="font-display text-5xl leading-none tracking-[-0.01em] sm:text-7xl">
         <span className="mr-4 align-top font-mono text-xs tracking-wider text-ink-2">{index}</span>
-        {title}
+        <KineticText text={title} />
       </h2>
       {kicker && <p className="max-w-sm text-sm leading-relaxed text-ink-2 sm:text-right">{kicker}</p>}
     </Reveal>
@@ -60,6 +63,11 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c") }}
       />
       <Nav initials={`${firstName[0]}${lastName[0]}`} />
+      <CommandMenu
+        projects={projects.map((p) => ({ slug: p.slug, name: p.name, description: p.description }))}
+        email={basics.email}
+        profiles={basics.profiles.map((p) => ({ network: p.network, url: p.url }))}
+      />
       <main id="top" className="mx-auto w-full max-w-6xl px-4 sm:px-8">
         <Hero
           firstName={firstName}
@@ -137,6 +145,8 @@ export default async function Home() {
           </div>
         </section>
 
+        <SkillsMarquee skills={skills.filter((s) => s.name !== "Analytical").flatMap((s) => s.keywords)} />
+
         <section id="about" className="scroll-mt-20 pt-28 sm:pt-40">
           <SectionHeading index="03" title="Education & skills" />
           <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
@@ -209,19 +219,23 @@ export default async function Home() {
           <Reveal className="border-t border-line pt-10">
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink-3">04 · Contact</p>
             <h2 className="mt-6 font-display text-[clamp(3rem,9vw,7.5rem)] leading-[0.95] tracking-[-0.02em]">
-              Let&apos;s build
-              <br />
-              <span className="italic text-accent">something solid.</span>
+              <KineticText text="Let’s build" className="block" />
+              <KineticText text="something solid." className="block italic text-accent" />
             </h2>
+            <Magnetic strength={0.15} className="mt-10">
             <a
               href={`mailto:${basics.email}`}
-              className="group mt-10 inline-flex items-center gap-3 text-lg sm:text-2xl"
+              className="group inline-flex items-center gap-3 text-lg sm:text-2xl"
             >
               <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-1 transition-[background-size] duration-500 ease-out-expo group-hover:bg-[length:100%_1px]">
                 {basics.email}
               </span>
               <span className="transition-transform duration-300 ease-out-expo group-hover:translate-x-1">→</span>
             </a>
+            </Magnetic>
+            <div className="mt-6">
+              <CopyEmail email={basics.email} />
+            </div>
             <ul className="mt-8 flex gap-6 text-sm text-ink-2">
               {basics.profiles.map((p) => (
                 <li key={p.network}>
@@ -235,7 +249,7 @@ export default async function Home() {
         </section>
       </main>
       <footer className="mx-auto w-full max-w-6xl border-t border-line px-4 py-8 text-xs text-ink-3 sm:px-8">
-        {basics.name} · {basics.location.city} · Projects sync from GitHub
+        {basics.name} · {basics.location.city} · Projects sync from GitHub · Press <kbd className="font-mono">/</kbd> to search
       </footer>
     </>
   );
