@@ -108,13 +108,12 @@ function toDate(value) {
   return undefined;
 }
 
-/** LinkedIn descriptions mix a paragraph with bullet lines; bullets become highlights. */
+/** LinkedIn descriptions mix a paragraph with bullets, on their own lines or run together ("● a ● b"). */
 function splitDescription(text) {
-  const lines = (text ?? "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const bullet = /^[-*•●▪◦–]\s*/;
-  const highlights = lines.filter((l) => bullet.test(l)).map((l) => l.replace(bullet, ""));
-  const summary = lines.filter((l) => !bullet.test(l)).join(" ");
-  return { summary: summary || undefined, highlights: highlights.length ? highlights : undefined };
+  const parts = (text ?? "").split(/\s*[•●▪◦]\s*|\r?\n\s*[-*–]\s+/);
+  const [lead, ...bullets] = parts.map((p) => p.replace(/\s+/g, " ").trim());
+  const highlights = bullets.filter(Boolean);
+  return { summary: lead || undefined, highlights: highlights.length ? highlights : undefined };
 }
 
 let files;
@@ -129,15 +128,20 @@ if (!["positions.csv", "education.csv", "certifications.csv", "skills.csv"].some
   process.exit(1);
 }
 const resume = readResume();
-const report = { added: [], filled: [], overwritten: [], differs: [], skills: [] };
+const report = { added: [], filled: [], overwritten: [], differs: new Set(), skills: [] };
 
-/** A real difference, not LinkedIn giving the same date less precisely ("2024" vs "2024-01"). */
-const differs = (site, theirs) => theirs !== undefined && site !== undefined && site !== theirs && !String(site).startsWith(`${theirs}-`);
+/** A real difference, not LinkedIn saying the same thing less precisely ("2024" vs "2024-01", "Accra" vs "Accra, Ghana"). */
+const differs = (site, theirs) => theirs !== undefined && site !== undefined && !String(site).startsWith(theirs);
 
 /** Fills the entry's missing fields; with --overwrite, LinkedIn's `compare` fields (dates, location) also win. */
 function merge(section, entry, compare) {
   const i = find(resume, section, entry);
   const before = i === -1 ? null : structuredClone(resume[section][i]);
+  // An entry the site already describes keeps its own words.
+  if (before?.highlights?.length) {
+    delete entry.summary;
+    delete entry.highlights;
+  }
   const { change, fields } = upsert(resume, section, entry, { fillOnly: true });
   const name = describe(section, before ?? entry);
   const label = `${SECTIONS[section].label}: ${name}`;
@@ -152,7 +156,7 @@ function merge(section, entry, compare) {
   if (before && !flags.has("--overwrite")) {
     for (const k of compare) {
       if (differs(before[k], entry[k])) {
-        report.differs.push(`${SECTIONS[section].label}: ${name}: ${k} is ${before[k]} on the site, ${entry[k]} on LinkedIn`);
+        report.differs.add(`${SECTIONS[section].label}: ${name}: ${k} is ${before[k]} on the site, ${entry[k]} on LinkedIn`);
       }
     }
   }
@@ -161,7 +165,9 @@ function merge(section, entry, compare) {
 for (const r of readTable(files, "Positions.csv", "Company Name")) {
   if (!r["Company Name"] || !r.Title) continue;
   const startDate = toDate(r["Started On"]);
-  merge("work", { name: r["Company Name"], position: r.Title, location: r.Location || undefined, startDate, endDate: r["Finished On"] ? toDate(r["Finished On"]) : undefined, ...splitDescription(r.Description) }, ["startDate", "endDate", "location"]);
+  // Titles get shortened on LinkedIn ("Intern" vs "IT Intern (Rotational)"): same company and start month is the same job.
+  const same = resume.work.find((w) => similar(w.name, r["Company Name"]) && startDate && w.startDate === startDate);
+  merge("work", { name: same?.name ?? r["Company Name"], position: same?.position ?? r.Title, location: r.Location || undefined, startDate, endDate: r["Finished On"] ? toDate(r["Finished On"]) : undefined, ...splitDescription(r.Description) }, ["startDate", "endDate", "location"]);
 }
 
 for (const r of readTable(files, "Education.csv", "School Name")) {
@@ -187,7 +193,7 @@ const list = (title, items) => items.length && console.log(`\n${title} (${items.
 list("Added", report.added);
 list("Filled in missing fields", report.filled);
 list("Replaced with LinkedIn's", report.overwritten);
-list("Different on LinkedIn (kept the site's; --overwrite to take LinkedIn's)", report.differs);
+list("Different on LinkedIn (kept the site's; --overwrite to take LinkedIn's)", [...report.differs]);
 list(flags.has("--skills") ? 'Skills added under "More"' : "Skills on LinkedIn but not the site (--skills to add)", report.skills);
 const changed = report.added.length || report.filled.length || report.overwritten.length || (flags.has("--skills") && report.skills.length);
 if (!changed) console.log("\nresume.json already matches the export.");

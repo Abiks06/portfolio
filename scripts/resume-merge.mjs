@@ -24,15 +24,23 @@ const norm = (s) =>
   String(s ?? "")
     .toLowerCase()
     .normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/[^a-z0-9+#]+/g, " ")
     .trim();
+
+/** Words that vary between listings of the same organization ("Access Bank Plc" / "Access Bank Ghana"). */
+const FILLER = new Set(["plc", "ltd", "limited", "inc", "llc", "group", "company", "co", "ghana", "the"]);
+const words = (s) => {
+  const all = norm(s).split(" ").filter(Boolean);
+  const kept = all.filter((w) => !FILLER.has(w));
+  return new Set(kept.length ? kept : all);
+};
 
 /**
  * Same name, allowing for extra words: every word of the shorter name appears in the longer
  * ("Ecobank Ghana" ~ "Ecobank Ghana (eProcess)", "Morning Star School" ~ "Morning Star High School").
  */
 export function similar(a, b) {
-  const [x, y] = [norm(a), norm(b)].map((s) => new Set(s.split(" ").filter(Boolean)));
+  const [x, y] = [words(a), words(b)];
   const [short, long] = x.size <= y.size ? [x, y] : [y, x];
   return short.size > 0 && [...short].every((w) => long.has(w));
 }
@@ -107,4 +115,6 @@ export function removeSkill(resume, group, skill) {
   return true;
 }
 
-export const hasSkill = (resume, skill) => (resume.skills ?? []).some((g) => g.keywords.some((k) => norm(k) === norm(skill)));
+/** "Python (Programming Language)" also counts as "Python", "Cascading Style Sheets (CSS)" as "CSS". */
+const aliases = (s) => [s, s.replace(/\s*\(.*\)\s*/, ""), s.match(/\(([^)]+)\)/)?.[1]].filter(Boolean).map(norm);
+export const hasSkill = (resume, skill) => (resume.skills ?? []).some((g) => g.keywords.some((k) => aliases(skill).includes(norm(k))));

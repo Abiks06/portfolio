@@ -128,8 +128,18 @@
     { "name": "Java", "issuer": "Udemy" },
     { "name": "Python Bootcamp", "issuer": "Udemy" },
     { "name": "Web Development", "issuer": "Udemy" },
-    { "name": "Software Engineering Job Simulation", "issuer": "Electronic Arts · Forage" },
-    { "name": "Project Management Job Simulation", "issuer": "CBRE · Forage" }
+    {
+      "name": "Software Engineering Job Simulation",
+      "issuer": "Electronic Arts · Forage",
+      "date": "2025-10",
+      "url": "https://www.theforage.com/completion-certificates/j43dGscQHtJJ57N54/a77WE3de8qrxWferQ_j43dGscQHtJJ57N54_68caf1190b0b9899833abd68_1759700625964_completion_certificate.pdf"
+    },
+    {
+      "name": "Project Management Job Simulation",
+      "issuer": "CBRE · Forage",
+      "date": "2025-09",
+      "url": "https://www.theforage.com/completion-certificates/PDmHHPmLyCgdQWzdt/STkypM8iMfn4Gk9BF_PDmHHPmLyCgdQWzdt_68caf1190b0b9899833abd68_1758141612751_completion_certificate.pdf"
+    }
   ],
   "skills": [
     { "name": "Languages", "keywords": ["Java", "Python", "JavaScript", "TypeScript", "C++", "SQL", "GLSL"] },

@@ -5,7 +5,7 @@ import { Projects } from "@/components/projects";
 import { CountUp, Reveal } from "@/components/reveal";
 import { Timeline } from "@/components/timeline";
 import { getContributions, getGitHubStats, getProjects } from "@/lib/github";
-import { formatRange, resume } from "@/lib/resume";
+import { formatDate, formatRange, resume } from "@/lib/resume";
 import { SITE_URL } from "@/lib/site";
 
 function SectionHeading({ index, title, kicker }: { index: string; title: string; kicker?: string }) {
@@ -166,8 +166,17 @@ export default async function Home() {
                 <ul className="mt-4 divide-y divide-line border-y border-line">
                   {certificates.map((c) => (
                     <li key={c.name} className="flex items-baseline justify-between gap-4 py-3">
-                      <span>{c.name}</span>
-                      <span className="shrink-0 text-right text-xs text-ink-3">{c.issuer}</span>
+                      {c.url ? (
+                        <a href={c.url} className="underline decoration-line underline-offset-4 hover:decoration-current">
+                          {c.name}
+                        </a>
+                      ) : (
+                        <span>{c.name}</span>
+                      )}
+                      <span className="shrink-0 text-right text-xs text-ink-3">
+                        {c.issuer}
+                        {c.date && ` · ${formatDate(c.date)}`}
+                      </span>
                     </li>
                   ))}
                 </ul>
