@@ -7,6 +7,7 @@ import {
   BufferGeometry,
   Color,
   type Group,
+  type LineSegments,
   MathUtils,
   type Mesh,
   Quaternion,
@@ -43,7 +44,15 @@ const IDLE_SPIN = 0.18;
  * Pointer input → physics, shared by the canvas wrapper and the scene. A module-level object
  * because there is only ever one hero sculpture, and the frame loop mutates it 60 times a second.
  */
-const interaction = { velocity: IDLE_SPIN, dragging: false, burst: { x: 0, v: 0 } };
+const interaction = { velocity: IDLE_SPIN, dragging: false, impulse: 0 };
+/** Per-face shatter state (displacement, velocity, tumble), mutated by the frame loop like `interaction`. */
+const physics = FACES.map(() => ({ x: 0, v: 0, q: new Quaternion() }));
+
+/** A deterministic pseudo-random number in [0, 1) per (face, salt), so the server-free scene is stable. */
+const rand = (i: number, salt: number) => {
+  const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
 
 
 const WHITE = new Color(1, 1, 1);
@@ -60,7 +69,7 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
   const clock = useRef({ frames: 0, since: 0 });
 
   // Non-indexed geometry: three vertices per face so each face gets one flat colour.
-  const { geometry, normals, base, spread } = useMemo(() => {
+  const { geometry, normals, base, shards } = useMemo(() => {
     const g = new BufferGeometry();
     const positions = new Float32Array(FACES.length * 9);
     const faceNormals: Vector3[] = [];
@@ -71,9 +80,25 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
     });
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("color", new BufferAttribute(new Float32Array(FACES.length * 9), 3));
-    // Each face flies a slightly different distance when shattered, so it doesn't read as a uniform scale.
-    const spread = FACES.map((_, i) => 0.7 + ((i * 7919) % 13) / 20);
-    return { geometry: g, normals: faceNormals, base: positions.slice(), spread };
+    // Per-face shatter physics: its own spring (so faces come home at different moments), a
+    // flight direction off the normal, a tumble axis through its centre and a flight distance.
+    const shards = FACES.map((_, i) => {
+      const n = faceNormals[i];
+      const centroid = new Vector3(positions[i * 9] + positions[i * 9 + 3] + positions[i * 9 + 6], positions[i * 9 + 1] + positions[i * 9 + 4] + positions[i * 9 + 7], positions[i * 9 + 2] + positions[i * 9 + 5] + positions[i * 9 + 8]).divideScalar(3);
+      const wobble = new Vector3(rand(i, 1) - 0.5, rand(i, 2) - 0.5, rand(i, 3) - 0.5).multiplyScalar(0.7);
+      const stiffness = 38 + rand(i, 4) * 46;
+      return {
+        centroid,
+        dir: n.clone().add(wobble).normalize(),
+        axis: new Vector3(rand(i, 5) - 0.5, rand(i, 6) - 0.5, rand(i, 7) - 0.5).normalize(),
+        reach: 0.75 + rand(i, 8) * 0.7,
+        twist: (rand(i, 9) > 0.5 ? 1 : -1) * (1.6 + rand(i, 10) * 2.2),
+        stiffness,
+        // Slightly under-damped: a small overshoot as each face snaps home.
+        damping: 2 * Math.sqrt(stiffness) * 0.62,
+      };
+    });
+    return { geometry: g, normals: faceNormals, base: positions.slice(), shards };
   }, []);
 
   const shellGeometry = useMemo(() => {
@@ -107,7 +132,9 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
     return () => window.removeEventListener("pointermove", onMove);
   }, []);
 
-  const scratch = useMemo(() => ({ q: new Quaternion(), n: new Vector3(), c: new Color(), base: new Color() }), []);
+  const scratch = useMemo(() => ({ q: new Quaternion(), n: new Vector3(), p: new Vector3(), c: new Color(), base: new Color() }), []);
+  const shell = useRef<LineSegments>(null);
+  const shattered = useRef(false);
 
   useFrame((state, delta) => {
     const c = clock.current;
@@ -130,22 +157,46 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
       orbit.current.rotation.z += delta * 0.08 * strength;
     }
 
-    // Shatter: a damped spring pushes each face out along its normal and pulls it back.
-    const b = interaction.burst;
-    if (b.v !== 0 || b.x !== 0) {
+    // Shatter: every face is kicked out on its own spring, tumbling about its own axis, then
+    // snaps home with a small overshoot. More clicks while it's apart add more energy.
+    if (interaction.impulse) {
+      shards.forEach((sh, i) => (physics[i].v += interaction.impulse * (0.75 + sh.reach * 0.35)));
+      interaction.velocity += interaction.impulse * 1.1; // the burst sets the whole thing spinning
+      interaction.impulse = 0;
+      shattered.current = true;
+    }
+    if (shattered.current) {
       const dt = Math.min(delta, 1 / 30);
-      b.v += (-60 * b.x - 9 * b.v) * dt;
-      b.x += b.v * dt;
-      if (Math.abs(b.x) < 1e-4 && Math.abs(b.v) < 1e-3) b.x = b.v = 0;
       const pos = geometry.getAttribute("position") as BufferAttribute;
-      normals.forEach((n, i) => {
-        const d = b.x * spread[i];
+      let energy = 0;
+      let spreadSum = 0;
+      shards.forEach((sh, i) => {
+        const ph = physics[i];
+        ph.v += (-sh.stiffness * ph.x - sh.damping * ph.v) * dt;
+        ph.x += ph.v * dt;
+        energy += Math.abs(ph.x) + Math.abs(ph.v);
+        spreadSum += Math.max(0, ph.x);
+        ph.q.setFromAxisAngle(sh.axis, ph.x * sh.twist);
+        const fly = ph.x * sh.reach;
         for (let v = 0; v < 3; v++) {
           const k = i * 9 + v * 3;
-          pos.setXYZ(i * 3 + v, base[k] + n.x * d, base[k + 1] + n.y * d, base[k + 2] + n.z * d);
+          scratch.p.set(base[k], base[k + 1], base[k + 2]).sub(sh.centroid).applyQuaternion(ph.q).add(sh.centroid).addScaledVector(sh.dir, fly);
+          pos.setXYZ(i * 3 + v, scratch.p.x, scratch.p.y, scratch.p.z);
         }
       });
       pos.needsUpdate = true;
+      // The wire cage breathes out with the burst.
+      shell.current?.scale.setScalar(1 + (spreadSum / shards.length) * 0.32);
+      if (energy < 1e-3 * shards.length) {
+        physics.forEach((ph) => {
+          ph.x = ph.v = 0;
+          ph.q.identity();
+        });
+        pos.copyArray(base);
+        pos.needsUpdate = true;
+        shell.current?.scale.setScalar(1);
+        shattered.current = false;
+      }
     }
 
     // Re-shade every face from its current world-space normal, using the SVG's formula.
@@ -154,7 +205,8 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
     scratch.base.set(accent);
     const colors = geometry.getAttribute("color") as BufferAttribute;
     normals.forEach((n, i) => {
-      scratch.n.copy(n).applyQuaternion(scratch.q);
+      // A tumbling face is shaded by where it's facing now, so it flashes as it turns.
+      scratch.n.copy(n).applyQuaternion(physics[i].q).applyQuaternion(scratch.q);
       const { toward, amount } = shadeMix(shade(scratch.n.toArray() as Vec3));
       scratch.c.copy(scratch.base).lerp(toward === "white" ? WHITE : BLACK, amount);
       for (let v = 0; v < 3; v++) colors.setXYZ(i * 3 + v, scratch.c.r, scratch.c.g, scratch.c.b);
@@ -170,7 +222,7 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
             <mesh ref={body} geometry={geometry}>
               <meshBasicMaterial vertexColors />
             </mesh>
-            <lineSegments geometry={shellGeometry}>
+            <lineSegments ref={shell} geometry={shellGeometry}>
               <lineBasicMaterial color={new Color(ink)} transparent opacity={0.18} />
             </lineSegments>
           </group>
@@ -201,7 +253,7 @@ export default function HeroScene({ onReady }: { onReady: () => void }) {
   const drag = useRef({ x: 0, moved: 0, t: 0 });
 
   const shatter = () => {
-    interaction.burst.v += 5.5;
+    interaction.impulse += 4.2;
   };
 
   useEffect(() => {

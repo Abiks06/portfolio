@@ -3,6 +3,7 @@ import { CommandMenu } from "@/components/command-menu";
 import { Constellation } from "@/components/constellation";
 import { EasterEgg } from "@/components/easter-egg";
 import { LiveActivity } from "@/components/live-activity";
+import { ParticleInitials } from "@/components/particle-initials";
 import { Hero } from "@/components/hero";
 import { SkillsMarquee } from "@/components/marquee";
 import { CopyEmail, KineticText, Magnetic, ScrubText } from "@/components/motion-bits";
@@ -244,7 +245,8 @@ export default async function Home() {
         </section>
 
         <section id="contact" className="scroll-mt-20 py-28 sm:py-40">
-          <Reveal className="border-t border-line pt-10">
+          <Reveal className="grid items-center gap-10 border-t border-line pt-10 lg:grid-cols-[1.35fr_1fr]">
+            <div>
             <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink-3">04 · Contact</p>
             <h2 className="mt-6 font-display text-[clamp(3rem,9vw,7.5rem)] leading-[0.95] tracking-[-0.02em]">
               <KineticText text="Let’s build" className="block" />
@@ -273,6 +275,8 @@ export default async function Home() {
                 </li>
               ))}
             </ul>
+            </div>
+            <ParticleInitials text={`${firstName[0]}${lastName[0]}.`} />
           </Reveal>
         </section>
       </main>

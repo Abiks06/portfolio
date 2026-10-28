@@ -19,7 +19,8 @@ Any public repo under [Abiks06](https://github.com/Abiks06) tagged with the `por
   "startDate": "2026-10",
   "highlights": ["One line per highlight."],
   "keywords": ["Python", "ONNX"],
-  "image": "https://… (optional: otherwise the card shows a daily screenshot of the live demo)"
+  "image": "https://… (optional: otherwise the card shows a screenshot of the live demo)",
+  "screenshot": { "waitForHidden": ".loading", "delay": 3000 }
 }
 ```
 
@@ -43,6 +44,21 @@ Education, experience, leadership, certificates and skills live in `content/resu
 
 Next.js (App Router) · TypeScript · Tailwind CSS · Motion · Lenis · deployed on Vercel. GitHub data is pre-rendered and re-checked every 15 minutes, so a newly tagged repo appears with no per-repo setup. For an immediate refresh, open `/api/revalidate?secret=<REVALIDATE_SECRET>`.
 
+### Screenshots of each live demo
+
+`.github/workflows/screenshots.yml` runs `scripts/capture-screenshots.mjs` daily: headless Chrome opens every tagged project's homepage, and the images (2560×1600 WebP) are published to the `screenshots` branch as a single force-pushed commit. The site serves them from that commit on raw.githubusercontent.com. A capture that never reaches its ready state is dropped and the previous image is kept, so a loading screen never replaces a real screenshot.
+
+A project tunes its capture with a `screenshot` block in its card file: `path`, `waitFor`, `waitForHidden`, `click`, `delay`, `colorScheme`, `hide` and `skip` (see the script's header). Two need a real machine and are refreshed locally:
+
+- `"gpu": true` for scenes CI can't render (the ATM's Spline scene is WebGPU-only); CI keeps the last image.
+- `"login": {...}` for apps behind sign-in. Credentials come only from `SHOT_LOGIN_<SLUG>="email:password"`, never from the card. Issue Logger is captured from a local copy running its own seed data:
+
+```bash
+SHOT_LOGIN_ISSUE_LOGGER="ada@demo.test:demo-password-1" CHROME_PATH="<chrome or edge>" npm run screenshots -- ./shots --base issue-logger=http://localhost:3000
+```
+
+Then publish `./shots` to the `screenshots` branch (or run the workflow, which keeps everything it can't capture).
+
 ## Features
 
 - **Live from GitHub:** project cards (with a screenshot of each live demo, taken by [Microlink](https://microlink.io)'s free API and refreshed every 6 hours), stars and languages, a "Right now on GitHub" feed of the latest commits, pull requests and new repos, and the contribution calendar, which can switch to a **3D city** you can turn.
@@ -55,7 +71,8 @@ Next.js (App Router) · TypeScript · Tailwind CSS · Motion · Lenis · deploye
 
 Motion is spent where a first visit benefits and kept out of the way of reading:
 
-- **3D:** the hero sculpture spins when you drag it (and coasts), and shatters into its faces when you click it, springing back together; the contribution city rises out of the ground week by week.
+- **Background:** a topographic contour field drawn by one WebGL2 shader behind the whole page. It drifts, bends around the cursor like a lens (warming to the accent), and stirs as you scroll. Started once the page is idle, 30 fps (20 on phones) at reduced resolution, paused in hidden tabs.
+- **3D:** the hero sculpture spins when you drag it (and coasts); a click shatters it, each face on its own spring, tumbling about its own axis and re-shading as it turns, then snapping home with a small overshoot while the wire cage breathes out. The contact section's initials are ~2,500 points with depth that tilt toward the cursor, part around it and scatter on click. The contribution city rises out of the ground week by week.
 - **Type:** the letters of the name lean away from the cursor; a statement under the hero lights up word by word as you scroll through it.
 - **Theme switch:** the new theme spreads out in a circle from the toggle (View Transitions API).
 - **Scroll-linked:** the hero's text and sculpture separate into layers as you scroll away; a two-row skills marquee drifts and follows your scroll speed and direction; the timeline rail draws itself and each job's dot fills as it reaches the middle of the screen; a hairline under the nav shows reading progress.

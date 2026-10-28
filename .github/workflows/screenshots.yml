@@ -1,0 +1,55 @@
+# Daily screenshots of each portfolio project's live demo, published to the `screenshots` branch
+# (one commit, force-pushed, so the repo doesn't grow). The site reads them from raw.githubusercontent.com.
+# Projects marked "gpu" or needing a login keep their last image; refresh those locally with
+# `npm run screenshots` (see scripts/capture-screenshots.mjs).
+name: Screenshots
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: screenshots
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Start from the published images, so anything that can't be captured here keeps its picture.
+      - name: Fetch current screenshots
+        run: |
+          git fetch origin screenshots || true
+          mkdir -p "$RUNNER_TEMP/shots"
+          if git rev-parse --verify -q origin/screenshots >/dev/null; then
+            git --work-tree="$RUNNER_TEMP/shots" checkout origin/screenshots -- .
+          fi
+
+      - name: Capture
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/capture-screenshots.mjs "$RUNNER_TEMP/shots"
+
+      - name: Publish
+        working-directory: ${{ runner.temp }}/shots
+        run: |
+          git init -q -b screenshots
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Project screenshots"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" screenshots

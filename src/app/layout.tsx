@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { themeScript } from "@/components/theme";
+import { TopoBackground } from "@/components/topo-background";
 import { resume } from "@/lib/resume";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -59,7 +60,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full flex flex-col bg-paper text-ink">
+      {/* No body background: <html> carries the paper colour, so the contour field can sit between them. */}
+      <body className="min-h-full flex flex-col text-ink">
+        <TopoBackground />
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>

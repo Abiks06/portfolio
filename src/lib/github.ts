@@ -30,6 +30,8 @@ export type Project = {
   endDate?: string;
   /** A picture of the project: the card's own image, else a screenshot of its live demo. */
   image: string | null;
+  /** When the screenshot was taken, if it is one. */
+  imageCapturedAt?: string;
 };
 
 export type ContributionDay = { date: string; count: number; level: 0 | 1 | 2 | 3 | 4 };
@@ -126,32 +128,22 @@ function toProject(repo: GitHubRepo | null, extra: Card | undefined, languages: 
 }
 
 /**
- * A 1280×800 screenshot of a live demo from Microlink's free API (no key, 50 a day). Cached for
- * 6 hours per URL, so a handful of projects stays far under the limit and a redesigned demo
- * shows up the same day. Null on any failure: the card just has no picture.
+ * Screenshots of the live demos, from the `screenshots` branch that
+ * .github/workflows/screenshots.yml republishes daily (scripts/capture-screenshots.mjs).
+ * Served from raw.githubusercontent.com pinned to the branch's commit, so a URL only changes when
+ * its image does. (jsDelivr would cache longer, but Edge's tracking prevention flags it.)
+ * Empty on any failure: cards just have no picture.
  */
-async function screenshot(url: string): Promise<string | null> {
-  "use cache";
-  cacheLife({ stale: 3600, revalidate: 21600, expire: 43200 });
-  cacheTag(GITHUB_CACHE_TAG);
+async function getScreenshots(): Promise<Map<string, { url: string; capturedAt: string }>> {
   try {
-    const q = new URLSearchParams({
-      url,
-      screenshot: "true",
-      meta: "false",
-      "viewport.width": "1280",
-      "viewport.height": "800",
-      "viewport.deviceScaleFactor": "1",
-      "screenshot.type": "jpeg",
-      waitForTimeout: "1500",
-    });
-    const res = await fetch(`https://api.microlink.io/?${q}`);
-    if (!res.ok) return null;
-    const body = (await res.json()) as { status?: string; data?: { screenshot?: { url?: string } } };
-    const shot = body.data?.screenshot?.url;
-    return body.status === "success" && shot?.startsWith("https://") ? shot : null;
+    const branch = await gh<{ commit: { sha: string } }>(`/repos/${USERNAME}/portfolio/branches/screenshots`);
+    const base = `https://raw.githubusercontent.com/${USERNAME}/portfolio/${branch.commit.sha}`;
+    const res = await fetch(`${base}/manifest.json`);
+    if (!res.ok) return new Map();
+    const manifest = (await res.json()) as Record<string, { file: string; capturedAt: string }>;
+    return new Map(Object.entries(manifest).map(([slug, m]) => [slug, { url: `${base}/${m.file}`, capturedAt: m.capturedAt }]));
   } catch {
-    return null;
+    return new Map();
   }
 }
 
@@ -175,6 +167,7 @@ export async function getProjects(): Promise<Project[]> {
     const repos = await gh<GitHubRepo[]>(`/users/${USERNAME}/repos?per_page=100&type=owner&sort=pushed`);
     const tagged = repos.filter((r) => !r.fork && !r.archived && r.topics?.includes(TOPIC));
     const byRepo = new Map(resume.projects.filter((p) => p.repo).map((p) => [p.repo!.toLowerCase(), p]));
+    const shots = await getScreenshots();
 
     const fromGitHub = await Promise.all(
       tagged.map(async (repo) => {
@@ -183,7 +176,11 @@ export async function getProjects(): Promise<Project[]> {
           repoCard(repo.name),
         ]);
         const project = toProject(repo, { ...card, ...byRepo.get(repo.name.toLowerCase()) }, languages);
-        if (!project.image && project.homepage) project.image = await screenshot(project.homepage);
+        const shot = shots.get(project.slug);
+        if (!project.image && shot) {
+          project.image = shot.url;
+          project.imageCapturedAt = shot.capturedAt;
+        }
         return project;
       }),
     );

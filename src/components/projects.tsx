@@ -61,10 +61,20 @@ function Tilt({ children }: { children: React.ReactNode }) {
 }
 
 /** The live demo's screenshot in a minimal browser frame, labelled with its domain. */
-function Screenshot({ project, className = "", zoom = false }: { project: Project; className?: string; zoom?: boolean }) {
+/**
+ * The live demo's screenshot in a minimal browser frame. A shimmer holds the space until the
+ * image arrives, then it fades and settles in, so a card never pops in half-drawn.
+ */
+function Screenshot({ project, className = "", zoom = false, caption = false }: { project: Project; className?: string; zoom?: boolean; caption?: boolean }) {
+  const [loaded, setLoaded] = useState(false);
+  const img = useRef<HTMLImageElement>(null);
+  // A cached image can finish before React attaches onLoad.
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth) setLoaded(true);
+  }, []);
   if (!project.image) return null;
   const host = project.homepage ? new URL(project.homepage).host : null;
-  return (
+  const frame = (
     <figure className={`overflow-hidden rounded-xl border border-line bg-paper ${className}`}>
       <div className="flex items-center gap-1.5 border-b border-line px-3 py-2" aria-hidden="true">
         <span className="size-2 rounded-full bg-line" />
@@ -72,19 +82,41 @@ function Screenshot({ project, className = "", zoom = false }: { project: Projec
         <span className="size-2 rounded-full bg-line" />
         {host && <span className="ml-2 truncate font-mono text-[10px] text-ink-3">{host}</span>}
       </div>
-      <div className="aspect-[16/10] overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element -- a remote screenshot that changes daily; plain lazy img keeps it off the image optimiser's quota */}
+      <div className="relative aspect-[16/10] overflow-hidden bg-paper-2">
+        <span
+          aria-hidden="true"
+          className={`shimmer absolute inset-0 transition-opacity duration-500 ${loaded ? "opacity-0" : "opacity-100"}`}
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote screenshot from jsDelivr, already sized and compressed */}
         <img
+          ref={img}
           src={project.image}
           alt={`Screenshot of ${project.name}${host ? ` at ${host}` : ""}`}
           loading="lazy"
           decoding="async"
-          width={1280}
-          height={800}
-          className={`h-full w-full object-cover object-top ${zoom ? "transition-transform duration-700 ease-out-expo group-hover:scale-[1.04]" : ""}`}
+          width={2560}
+          height={1600}
+          onLoad={() => setLoaded(true)}
+          className={`relative h-full w-full object-cover object-top transition-[opacity,transform] duration-700 ease-out-expo ${loaded ? "opacity-100" : "scale-[1.03] opacity-0"} ${zoom && loaded ? "group-hover:scale-[1.04]" : ""}`}
         />
       </div>
     </figure>
+  );
+  if (!caption) return frame;
+  return (
+    <div className="mt-8">
+      {project.homepage ? (
+        <a href={project.homepage} target="_blank" rel="noreferrer" className="group/shot block" aria-label={`Open the ${project.name} live demo`}>
+          {frame}
+        </a>
+      ) : (
+        frame
+      )}
+      <p className="mt-2 font-mono text-[11px] text-ink-3">
+        {project.imageCapturedAt ? `Live demo, captured ${formatDate(project.imageCapturedAt.slice(0, 7))}` : "Live demo"}
+        {project.homepage && " · click to open it"}
+      </p>
+    </div>
   );
 }
 
@@ -213,7 +245,7 @@ function ProjectDetail({ project, index, onClose }: { project: Project; index: n
               ×
             </button>
           </div>
-          <Screenshot project={project} className="mt-8" />
+          <Screenshot project={project} caption />
           <h3 className="mt-8 font-display text-4xl leading-tight sm:text-5xl">{project.name}</h3>
           {(project.startDate || project.pushedAt) && (
             <p className="mt-2 font-mono text-xs uppercase tracking-wider text-ink-3">
