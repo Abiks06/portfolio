@@ -3,6 +3,7 @@
 import { m, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { openCommandMenu } from "./command-menu";
+import { ThemeToggle } from "./theme";
 
 const LINKS = [
   { href: "#work", label: "Work" },
@@ -92,6 +93,7 @@ export function Nav({ initials }: { initials: string }) {
             <kbd className="font-mono">{mac ? "⌘" : "Ctrl"}</kbd>
             <kbd className="font-mono">K</kbd>
           </button>
+          <ThemeToggle />
         </div>
       </nav>
       {/* Reading progress: how far down the page you are. */}

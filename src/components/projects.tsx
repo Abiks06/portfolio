@@ -60,6 +60,34 @@ function Tilt({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** The live demo's screenshot in a minimal browser frame, labelled with its domain. */
+function Screenshot({ project, className = "", zoom = false }: { project: Project; className?: string; zoom?: boolean }) {
+  if (!project.image) return null;
+  const host = project.homepage ? new URL(project.homepage).host : null;
+  return (
+    <figure className={`overflow-hidden rounded-xl border border-line bg-paper ${className}`}>
+      <div className="flex items-center gap-1.5 border-b border-line px-3 py-2" aria-hidden="true">
+        <span className="size-2 rounded-full bg-line" />
+        <span className="size-2 rounded-full bg-line" />
+        <span className="size-2 rounded-full bg-line" />
+        {host && <span className="ml-2 truncate font-mono text-[10px] text-ink-3">{host}</span>}
+      </div>
+      <div className="aspect-[16/10] overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element -- a remote screenshot that changes daily; plain lazy img keeps it off the image optimiser's quota */}
+        <img
+          src={project.image}
+          alt={`Screenshot of ${project.name}${host ? ` at ${host}` : ""}`}
+          loading="lazy"
+          decoding="async"
+          width={1280}
+          height={800}
+          className={`h-full w-full object-cover object-top ${zoom ? "transition-transform duration-700 ease-out-expo group-hover:scale-[1.04]" : ""}`}
+        />
+      </div>
+    </figure>
+  );
+}
+
 function LanguageChips({ project, limit = 3 }: { project: Project; limit?: number }) {
   const names = project.languages.length ? project.languages.map((l) => l.name) : project.keywords;
   return (
@@ -103,7 +131,8 @@ function ProjectCard({ project, index, onOpen, hidden }: { project: Project; ind
             </span>
           )}
         </div>
-        <h3 className="relative mt-10 font-display text-3xl leading-tight sm:text-4xl">{project.name}</h3>
+        <Screenshot project={project} zoom className="relative mt-6" />
+        <h3 className={`relative font-display text-3xl leading-tight sm:text-4xl ${project.image ? "mt-6" : "mt-10"}`}>{project.name}</h3>
         {project.description && <p className="relative mt-3 line-clamp-3 text-sm leading-relaxed text-ink-2">{project.description}</p>}
         <div className="relative mt-auto flex items-end justify-between gap-4 pt-8">
           <LanguageChips project={project} />
@@ -184,6 +213,7 @@ function ProjectDetail({ project, index, onClose }: { project: Project; index: n
               ×
             </button>
           </div>
+          <Screenshot project={project} className="mt-8" />
           <h3 className="mt-8 font-display text-4xl leading-tight sm:text-5xl">{project.name}</h3>
           {(project.startDate || project.pushedAt) && (
             <p className="mt-2 font-mono text-xs uppercase tracking-wider text-ink-3">

@@ -1,8 +1,9 @@
 "use client";
 
-import { AnimatePresence, m, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
+import { AnimatePresence, m, type MotionValue, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import { useRef, useState } from "react";
 import { copyText } from "@/lib/copy-text";
+import { useCssColor } from "@/lib/use-css-color";
 import { useMediaQuery } from "@/lib/use-media-query";
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -124,5 +125,34 @@ export function CopyEmail({ email }: { email: string }) {
         </m.span>
       </AnimatePresence>
     </button>
+  );
+}
+
+function ScrubWord({ word, index, total, progress, dim, lit }: { word: string; index: number; total: number; progress: MotionValue<number>; dim: string; lit: string }) {
+  // Each word lights up over its own slice of the scroll, with a little overlap so it reads as a sweep.
+  // It goes from ink-3 (which passes contrast on its own) to full ink, so it's always readable.
+  const start = index / total;
+  const color = useTransform(progress, [start - 0.04, start + 1.5 / total], [dim, lit]);
+  return <m.span style={{ color }}>{word} </m.span>;
+}
+
+/**
+ * A statement whose words light up one after another as it scrolls through the screen, so it's
+ * read at the pace you scroll. Fully lit for reduced motion.
+ */
+export function ScrubText({ text, className }: { text: string; className?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 85%", "end 50%"] });
+  // Real colour values (not var()s) so Motion can interpolate them; they follow the theme.
+  const dim = useCssColor("--ink-3", "#6a645a");
+  const lit = useCssColor("--ink", "#1b1a17");
+  const words = text.split(" ");
+  return (
+    <p ref={ref} className={className}>
+      {reduced
+        ? text
+        : words.map((w, i) => <ScrubWord key={`${i}-${dim}-${lit}`} word={w} index={i} total={words.length} progress={scrollYProgress} dim={dim} lit={lit} />)}
+    </p>
   );
 }

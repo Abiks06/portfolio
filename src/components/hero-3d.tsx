@@ -46,6 +46,13 @@ export function Hero3D() {
     };
   }, []);
 
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const fade = "absolute inset-0 transition-opacity duration-700 ease-out";
 
   return (
@@ -56,6 +63,12 @@ export function Hero3D() {
           <HeroScene onReady={() => setReady(true)} />
         </div>
       )}
+      {/* Only the live scene is interactive, so the hint waits for it, and leaves once you scroll. */}
+      <p
+        className={`pointer-events-none absolute inset-x-0 bottom-[6%] text-center font-mono text-[11px] uppercase tracking-[0.18em] text-ink-3 transition-opacity duration-500 ${ready && !scrolled ? "opacity-100 delay-1000" : "opacity-0"}`}
+      >
+        Drag to spin · click to shatter
+      </p>
     </div>
   );
 }

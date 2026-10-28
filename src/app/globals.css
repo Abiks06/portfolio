@@ -14,8 +14,20 @@
   color-scheme: light;
 }
 
+/* Dark: chosen with the theme toggle, or following the system when nothing is chosen. */
+:root[data-theme="dark"] {
+  --paper: #12110f;
+  --paper-2: #1c1a17;
+  --ink: #eee8de;
+  --ink-2: #b3ab9f;
+  --ink-3: #8f887c;
+  --line: #2e2a25;
+  --accent: #f26b3d;
+  --on-accent: #12110f;
+  color-scheme: dark;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --paper: #12110f;
     --paper-2: #1c1a17;
     --ink: #eee8de;
@@ -26,6 +38,27 @@
     --on-accent: #12110f;
     color-scheme: dark;
   }
+}
+
+/* Theme switch: the new theme spreads out in a circle from the toggle (see theme.tsx). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* Paper grain: a faint, fixed noise layer so the page reads like print. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:root[data-theme="dark"] body::before {
+  opacity: 0.07;
 }
 
 @theme inline {
@@ -88,7 +121,19 @@ body {
 .anim-fade-scale {
   animation: fade-scale 1.4s var(--ease-out-expo) both;
 }
+/* The hero name's mask: clips during the rise, then opens so its letters can react to the pointer. */
+.mask-line {
+  clip-path: inset(0 -100vw);
+  animation: unmask 0s linear 1.5s forwards;
+}
+@keyframes unmask {
+  to {
+    clip-path: inset(-60% -100vw);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .mask-line,
   .anim-rise,
   .anim-fade-up,
   .anim-fade-scale {
@@ -118,5 +163,57 @@ html.lenis body {
   a,
   button {
     -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Constellation nodes bob slowly, each offset in time (see constellation.tsx). */
+@keyframes constellation-float {
+  0%,
+  100% {
+    transform: translate(0, -3px);
+  }
+  50% {
+    transform: translate(0, 3px);
+  }
+}
+.constellation-float {
+  animation: constellation-float 6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .constellation-float {
+    animation: none;
+  }
+}
+
+/* Focus ring for SVG nodes in the constellation. */
+g[tabindex]:focus-visible rect {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+/* CV page: a clean A4 print with no grain or page background. */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 16mm;
+  }
+  body::before {
+    display: none;
+  }
+  html,
+  body {
+    background: #fff;
+  }
+  /* Always print the light palette, whatever theme is on screen. */
+  :root,
+  :root[data-theme] {
+    --paper: #ffffff;
+    --paper-2: #ffffff;
+    --ink: #1b1a17;
+    --ink-2: #3f3b35;
+    --ink-3: #6a645a;
+    --line: #d9d1c4;
+    --accent: #cc4a1f;
+    color-scheme: light;
   }
 }

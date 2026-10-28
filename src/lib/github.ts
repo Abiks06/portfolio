@@ -28,6 +28,8 @@ export type Project = {
   keywords: string[];
   startDate?: string;
   endDate?: string;
+  /** A picture of the project: the card's own image, else a screenshot of its live demo. */
+  image: string | null;
 };
 
 export type ContributionDay = { date: string; count: number; level: 0 | 1 | 2 | 3 | 4 };
@@ -67,7 +69,7 @@ function prettify(repoName: string) {
 /** Where a project repo keeps its own card data (all fields optional). */
 const CARD_PATH = ".github/portfolio.json";
 
-type Card = Partial<Omit<ResumeProject, "repo">>;
+type Card = Partial<Omit<ResumeProject, "repo">> & { image?: string };
 
 const isDate = (v: unknown): v is string => typeof v === "string" && /^\d{4}(-\d{2})?$/.test(v);
 const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
@@ -84,6 +86,7 @@ function parseCard(raw: unknown): Card {
     ...(isDate(r.endDate) && { endDate: r.endDate }),
     ...(isStrings(r.highlights) && { highlights: r.highlights }),
     ...(isStrings(r.keywords) && { keywords: r.keywords }),
+    ...(typeof r.image === "string" && r.image.startsWith("https://") && { image: r.image }),
   };
 }
 
@@ -118,7 +121,38 @@ function toProject(repo: GitHubRepo | null, extra: Card | undefined, languages: 
     keywords: extra?.keywords ?? [],
     startDate: extra?.startDate,
     endDate: extra?.endDate,
+    image: extra?.image ?? null,
   };
+}
+
+/**
+ * A 1280×800 screenshot of a live demo from Microlink's free API (no key, 50 a day). Cached for
+ * 6 hours per URL, so a handful of projects stays far under the limit and a redesigned demo
+ * shows up the same day. Null on any failure: the card just has no picture.
+ */
+async function screenshot(url: string): Promise<string | null> {
+  "use cache";
+  cacheLife({ stale: 3600, revalidate: 21600, expire: 43200 });
+  cacheTag(GITHUB_CACHE_TAG);
+  try {
+    const q = new URLSearchParams({
+      url,
+      screenshot: "true",
+      meta: "false",
+      "viewport.width": "1280",
+      "viewport.height": "800",
+      "viewport.deviceScaleFactor": "1",
+      "screenshot.type": "jpeg",
+      waitForTimeout: "1500",
+    });
+    const res = await fetch(`https://api.microlink.io/?${q}`);
+    if (!res.ok) return null;
+    const body = (await res.json()) as { status?: string; data?: { screenshot?: { url?: string } } };
+    const shot = body.data?.screenshot?.url;
+    return body.status === "success" && shot?.startsWith("https://") ? shot : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Projects from resume.json alone, used when GitHub is unreachable. */
@@ -148,7 +182,9 @@ export async function getProjects(): Promise<Project[]> {
           gh<Record<string, number>>(`/repos/${USERNAME}/${repo.name}/languages`).catch(() => ({})),
           repoCard(repo.name),
         ]);
-        return toProject(repo, { ...card, ...byRepo.get(repo.name.toLowerCase()) }, languages);
+        const project = toProject(repo, { ...card, ...byRepo.get(repo.name.toLowerCase()) }, languages);
+        if (!project.image && project.homepage) project.image = await screenshot(project.homepage);
+        return project;
       }),
     );
     const resumeOnly = resume.projects.filter((p) => !p.repo).map((p) => toProject(null, p, {}));
@@ -214,5 +250,80 @@ export async function getContributions(): Promise<{ total: number; days: Contrib
   } catch (error) {
     console.error(error);
     return null;
+  }
+}
+
+export type Activity = { id: string; kind: "push" | "pr" | "repo" | "release" | "star"; repo: string; title: string; url: string; at: string };
+
+type GitHubEvent = {
+  id: string;
+  type: string;
+  created_at: string;
+  repo: { name: string };
+  payload: {
+    head?: string;
+    ref?: string;
+    ref_type?: string;
+    action?: string;
+    number?: number;
+    pull_request?: { number: number; title?: string; html_url?: string; url?: string; merged?: boolean };
+    release?: { name: string | null; tag_name: string; html_url: string };
+  };
+};
+
+/**
+ * The latest public things done on GitHub, newest first: pushes (with the commit message, which
+ * the events API no longer includes), pull requests, new repositories and releases. Consecutive
+ * pushes to one repo collapse into the newest. Empty when GitHub is unreachable.
+ */
+export async function getActivity(limit = 5): Promise<Activity[]> {
+  "use cache";
+  cacheLife(GITHUB_CACHE_LIFE);
+  cacheTag(GITHUB_CACHE_TAG);
+
+  try {
+    const events = await gh<GitHubEvent[]>(`/users/${USERNAME}/events/public?per_page=40`);
+    events.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const picked: GitHubEvent[] = [];
+    for (const e of events) {
+      if (picked.length >= limit) break;
+      const last = picked.at(-1);
+      // A run of the same kind of event on one repo collapses into its newest, so the feed shows a mix.
+      if (last && last.type === e.type && last.repo.name === e.repo.name) continue;
+      if (["PushEvent", "PullRequestEvent", "CreateEvent", "ReleaseEvent"].includes(e.type)) {
+        if (e.type === "CreateEvent" && e.payload.ref_type !== "repository") continue;
+        if (e.type === "PullRequestEvent" && !["opened", "closed"].includes(e.payload.action ?? "")) continue;
+        picked.push(e);
+      }
+    }
+    return await Promise.all(
+      picked.map(async (e): Promise<Activity> => {
+        const repo = e.repo.name.split("/")[1] ?? e.repo.name;
+        const repoUrl = `https://github.com/${e.repo.name}`;
+        if (e.type === "PushEvent") {
+          const commit = e.payload.head
+            ? await gh<{ commit: { message: string }; html_url: string }>(`/repos/${e.repo.name}/commits/${e.payload.head}`).catch(() => null)
+            : null;
+          return { id: e.id, kind: "push", repo, title: commit?.commit.message.split("\n")[0] ?? "Pushed commits", url: commit?.html_url ?? repoUrl, at: e.created_at };
+        }
+        if (e.type === "PullRequestEvent") {
+          // Events no longer carry the PR's title or merge state, so look the PR up.
+          const number = e.payload.pull_request?.number ?? e.payload.number;
+          const pr = number
+            ? await gh<{ title: string; html_url: string; merged: boolean }>(`/repos/${e.repo.name}/pulls/${number}`).catch(() => null)
+            : null;
+          const verb = e.payload.action === "opened" ? "Opened" : pr?.merged ? "Merged" : "Closed";
+          return { id: e.id, kind: "pr", repo, title: pr ? `${verb} #${number}: ${pr.title}` : `${verb} pull request #${number}`, url: pr?.html_url ?? repoUrl, at: e.created_at };
+        }
+        if (e.type === "ReleaseEvent" && e.payload.release) {
+          const r = e.payload.release;
+          return { id: e.id, kind: "release", repo, title: `Released ${r.name || r.tag_name}`, url: r.html_url, at: e.created_at };
+        }
+        return { id: e.id, kind: "repo", repo, title: "Created a new repository", url: repoUrl, at: e.created_at };
+      }),
+    );
+  } catch (error) {
+    console.error(error);
+    return [];
   }
 }

@@ -29,24 +29,22 @@ import {
   type Vec3,
 } from "@/lib/sculpture";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { BURST_EVENT } from "@/lib/events";
+import { useCssColor } from "@/lib/use-css-color";
 
 /** Seconds after the first frame before the sculpture starts moving: the crossfade runs first. */
 const SETTLE = 0.9;
 /** Seconds for the spin and tilt to ease up to full strength. */
 const EASE_IN = 1.6;
+/** Idle spin in radians per second; a drag overrides it and the spin coasts back. */
+const IDLE_SPIN = 0.18;
 
-/** Reads a CSS custom property and follows light/dark switches. */
-function useCssColor(name: string, fallback: string) {
-  const [color, setColor] = useState(fallback);
-  useEffect(() => {
-    const read = () => setColor(getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback);
-    read();
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    media.addEventListener("change", read);
-    return () => media.removeEventListener("change", read);
-  }, [name, fallback]);
-  return color;
-}
+/**
+ * Pointer input → physics, shared by the canvas wrapper and the scene. A module-level object
+ * because there is only ever one hero sculpture, and the frame loop mutates it 60 times a second.
+ */
+const interaction = { velocity: IDLE_SPIN, dragging: false, burst: { x: 0, v: 0 } };
+
 
 const WHITE = new Color(1, 1, 1);
 const BLACK = new Color(0, 0, 0);
@@ -62,7 +60,7 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
   const clock = useRef({ frames: 0, since: 0 });
 
   // Non-indexed geometry: three vertices per face so each face gets one flat colour.
-  const { geometry, normals } = useMemo(() => {
+  const { geometry, normals, base, spread } = useMemo(() => {
     const g = new BufferGeometry();
     const positions = new Float32Array(FACES.length * 9);
     const faceNormals: Vector3[] = [];
@@ -73,7 +71,9 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
     });
     g.setAttribute("position", new BufferAttribute(positions, 3));
     g.setAttribute("color", new BufferAttribute(new Float32Array(FACES.length * 9), 3));
-    return { geometry: g, normals: faceNormals };
+    // Each face flies a slightly different distance when shattered, so it doesn't read as a uniform scale.
+    const spread = FACES.map((_, i) => 0.7 + ((i * 7919) % 13) / 20);
+    return { geometry: g, normals: faceNormals, base: positions.slice(), spread };
   }, []);
 
   const shellGeometry = useMemo(() => {
@@ -121,10 +121,31 @@ function Sculpture({ animate, onReady }: { animate: boolean; onReady: () => void
     if (animate && c.frames > 1 && tilt.current && spin.current && orbit.current) {
       const t = state.clock.elapsedTime - c.since - SETTLE;
       const strength = MathUtils.smootherstep(t, 0, EASE_IN);
-      spin.current.rotation.y += delta * 0.18 * strength;
+      const io = interaction;
+      // A flick keeps spinning and coasts back to the idle speed.
+      if (!io.dragging) io.velocity = MathUtils.damp(io.velocity, IDLE_SPIN, 1.4, delta);
+      spin.current.rotation.y += delta * io.velocity * strength;
       tilt.current.rotation.x = MathUtils.damp(tilt.current.rotation.x, pointer.current.y * 0.35 * strength, 3, delta);
       tilt.current.rotation.z = MathUtils.damp(tilt.current.rotation.z, -pointer.current.x * 0.2 * strength, 3, delta);
       orbit.current.rotation.z += delta * 0.08 * strength;
+    }
+
+    // Shatter: a damped spring pushes each face out along its normal and pulls it back.
+    const b = interaction.burst;
+    if (b.v !== 0 || b.x !== 0) {
+      const dt = Math.min(delta, 1 / 30);
+      b.v += (-60 * b.x - 9 * b.v) * dt;
+      b.x += b.v * dt;
+      if (Math.abs(b.x) < 1e-4 && Math.abs(b.v) < 1e-3) b.x = b.v = 0;
+      const pos = geometry.getAttribute("position") as BufferAttribute;
+      normals.forEach((n, i) => {
+        const d = b.x * spread[i];
+        for (let v = 0; v < 3; v++) {
+          const k = i * 9 + v * 3;
+          pos.setXYZ(i * 3 + v, base[k] + n.x * d, base[k + 1] + n.y * d, base[k + 2] + n.z * d);
+        }
+      });
+      pos.needsUpdate = true;
     }
 
     // Re-shade every face from its current world-space normal, using the SVG's formula.
@@ -177,6 +198,37 @@ export default function HeroScene({ onReady }: { onReady: () => void }) {
   const wrapper = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
   const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const drag = useRef({ x: 0, moved: 0, t: 0 });
+
+  const shatter = () => {
+    interaction.burst.v += 5.5;
+  };
+
+  useEffect(() => {
+    window.addEventListener(BURST_EVENT, shatter);
+    return () => window.removeEventListener(BURST_EVENT, shatter);
+  }, []);
+
+  // Drag sideways to spin (the speed you let go at carries on); a press that barely moves is a click, which shatters it.
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (reduced) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { x: e.clientX, moved: 0, t: performance.now() };
+    interaction.dragging = true;
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!interaction.dragging) return;
+    const now = performance.now();
+    const dx = e.clientX - drag.current.x;
+    const dt = Math.max(now - drag.current.t, 8) / 1000;
+    drag.current = { x: e.clientX, moved: drag.current.moved + Math.abs(dx), t: now };
+    interaction.velocity = MathUtils.clamp((dx / dt) * 0.012, -14, 14);
+  };
+  const onPointerUp = () => {
+    if (!interaction.dragging) return;
+    interaction.dragging = false;
+    if (drag.current.moved < 6) shatter();
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
@@ -187,7 +239,15 @@ export default function HeroScene({ onReady }: { onReady: () => void }) {
   const animate = visible && !reduced;
 
   return (
-    <div ref={wrapper} className="h-full w-full" aria-hidden="true">
+    <div
+      ref={wrapper}
+      className={`h-full w-full touch-pan-y ${reduced ? "" : "cursor-grab active:cursor-grabbing"}`}
+      aria-hidden="true"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
       {/* Colours pass through untouched so the canvas matches the SVG exactly:
           legacy = no colour management, flat = no tone mapping, linear = no output encoding. */}
       <Canvas

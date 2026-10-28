@@ -1,8 +1,11 @@
 "use client";
 
 import { useLenis } from "lenis/react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { copyText } from "@/lib/copy-text";
+import { BURST_EVENT } from "@/lib/events";
+import { setTheme } from "./theme";
 
 const OPEN_EVENT = "portfolio:command-menu";
 export const OPEN_PROJECT_EVENT = "portfolio:open-project";
@@ -34,6 +37,7 @@ export function CommandMenu({
   const input = useRef<HTMLInputElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const lenis = useLenis();
+  const router = useRouter();
   const listId = useId();
 
   const close = useCallback(() => {
@@ -58,6 +62,7 @@ export function CommandMenu({
       { id: "experience", group: "Go to", label: "Experience", keywords: "jobs internships banks", run: () => go("#experience") },
       { id: "about", group: "Go to", label: "Education & skills", keywords: "university skills certifications", run: () => go("#about") },
       { id: "contact", group: "Go to", label: "Contact", keywords: "email hire", run: () => go("#contact") },
+      { id: "cv", group: "Go to", label: "CV (printable)", hint: "/cv", keywords: "resume pdf download print", run: () => router.push("/cv") },
       ...projects.map((p) => ({
         id: `project-${p.slug}`,
         group: "Open project",
@@ -76,6 +81,18 @@ export function CommandMenu({
         },
       },
       { id: "email", group: "Contact", label: "Write an email", hint: email, keywords: "mail", run: () => void (window.location.href = `mailto:${email}`) },
+      {
+        id: "theme",
+        group: "Settings",
+        label: "Switch light / dark",
+        keywords: "theme dark mode light mode appearance",
+        run: () => {
+          const dark = document.documentElement.dataset.theme === "dark" || (!document.documentElement.dataset.theme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          setTheme(dark ? "light" : "dark");
+        },
+      },
+      { id: "theme-system", group: "Settings", label: "Follow the system theme", keywords: "theme auto appearance", run: () => setTheme(null) },
+      { id: "shatter", group: "Play", label: "Shatter the sculpture", keywords: "3d fun break explode easter", run: () => void (go("#top"), window.dispatchEvent(new Event(BURST_EVENT))) },
       ...profiles.map((p) => ({
         id: `profile-${p.network}`,
         group: "Contact",
@@ -84,7 +101,7 @@ export function CommandMenu({
         run: () => void window.open(p.url, "_blank", "noopener"),
       })),
     ],
-    [projects, email, profiles, go],
+    [projects, email, profiles, go, router],
   );
 
   const results = useMemo(() => {

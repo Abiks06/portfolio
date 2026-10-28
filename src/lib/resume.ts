@@ -50,6 +50,11 @@ export type Resume = {
   basics: {
     name: string;
     label: string;
+    /** A one-sentence statement for the scroll-lit section under the hero. */
+    statement?: string;
+    availability?: string;
+    /** IANA zone for the local-time badge, e.g. Africa/Accra. */
+    timezone?: string;
     image?: string;
     email: string;
     summary: string;

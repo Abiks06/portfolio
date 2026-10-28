@@ -1,13 +1,16 @@
-import { Heatmap } from "@/components/activity";
+import { ActivityViews } from "@/components/activity";
 import { CommandMenu } from "@/components/command-menu";
+import { Constellation } from "@/components/constellation";
+import { EasterEgg } from "@/components/easter-egg";
+import { LiveActivity } from "@/components/live-activity";
 import { Hero } from "@/components/hero";
 import { SkillsMarquee } from "@/components/marquee";
-import { CopyEmail, KineticText, Magnetic } from "@/components/motion-bits";
+import { CopyEmail, KineticText, Magnetic, ScrubText } from "@/components/motion-bits";
 import { Nav } from "@/components/nav";
 import { Projects } from "@/components/projects";
 import { CountUp, Reveal } from "@/components/reveal";
 import { Timeline } from "@/components/timeline";
-import { getContributions, getGitHubStats, getProjects } from "@/lib/github";
+import { getActivity, getContributions, getGitHubStats, getProjects } from "@/lib/github";
 import { formatDate, formatRange, resume } from "@/lib/resume";
 import { SITE_URL } from "@/lib/site";
 
@@ -24,7 +27,7 @@ function SectionHeading({ index, title, kicker }: { index: string; title: string
 }
 
 export default async function Home() {
-  const [projects, contributions, stats] = await Promise.all([getProjects(), getContributions(), getGitHubStats()]);
+  const [projects, contributions, stats, activity] = await Promise.all([getProjects(), getContributions(), getGitHubStats(), getActivity()]);
   const { basics, education, work, leadership, skills, certificates, languages } = resume;
 
   const [firstName, ...rest] = basics.name.split(" ");
@@ -63,6 +66,7 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd).replace(/</g, "\\u003c") }}
       />
       <Nav initials={`${firstName[0]}${lastName[0]}`} />
+      <EasterEgg />
       <CommandMenu
         projects={projects.map((p) => ({ slug: p.slug, name: p.name, description: p.description }))}
         email={basics.email}
@@ -76,6 +80,9 @@ export default async function Home() {
           label={basics.label}
           summary={basics.summary}
           email={basics.email}
+          city={basics.location.city}
+          timezone={basics.timezone}
+          availability={basics.availability}
         />
 
         <section aria-label="At a glance" className="grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-line bg-line lg:grid-cols-4">
@@ -89,6 +96,12 @@ export default async function Home() {
           ))}
         </section>
 
+        {basics.statement && (
+          <section aria-label="What I build" className="pt-28 sm:pt-40">
+            <ScrubText text={basics.statement} className="max-w-5xl font-display text-[clamp(2rem,4.6vw,4rem)] leading-[1.08] tracking-[-0.01em]" />
+          </section>
+        )}
+
         <section id="work" className="scroll-mt-20 pt-28 sm:pt-40">
           <SectionHeading
             index="01"
@@ -97,15 +110,25 @@ export default async function Home() {
           />
           <Projects projects={projects} />
 
-          {contributions && (
+          {activity.length > 0 && (
             <Reveal className="mt-16 rounded-3xl border border-line p-6 sm:p-8">
+              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+                <h3 className="font-display text-2xl">Right now on GitHub</h3>
+                <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-3">Live · refreshes every 15 min</span>
+              </div>
+              <LiveActivity items={activity} />
+            </Reveal>
+          )}
+
+          {contributions && (
+            <Reveal className="mt-4 rounded-3xl border border-line p-6 sm:p-8">
               <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="font-display text-2xl">GitHub activity</h3>
                 <a href={basics.profiles.find((p) => p.network === "GitHub")?.url} className="text-sm text-ink-2 underline-offset-4 hover:text-ink hover:underline">
                   @{basics.profiles.find((p) => p.network === "GitHub")?.username} ↗
                 </a>
               </div>
-              <Heatmap days={contributions.days} total={contributions.total} />
+              <ActivityViews days={contributions.days} total={contributions.total} />
             </Reveal>
           )}
         </section>
@@ -148,7 +171,12 @@ export default async function Home() {
         <SkillsMarquee skills={skills.filter((s) => s.name !== "Analytical").flatMap((s) => s.keywords)} />
 
         <section id="about" className="scroll-mt-20 pt-28 sm:pt-40">
-          <SectionHeading index="03" title="Education & skills" />
+          <SectionHeading index="03" title="Education & skills" kicker="How the tools connect, then where I learned them." />
+          <Reveal className="mb-20 rounded-3xl border border-line p-4 sm:p-8">
+            <Constellation
+              projects={projects.map((p) => ({ slug: p.slug, name: p.name, tech: [...p.keywords, ...p.languages.slice(0, 3).map((l) => l.name)] }))}
+            />
+          </Reveal>
           <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:gap-16">
             <div className="space-y-10">
               {education.map((e, i) => (
@@ -249,7 +277,7 @@ export default async function Home() {
         </section>
       </main>
       <footer className="mx-auto w-full max-w-6xl border-t border-line px-4 py-8 text-xs text-ink-3 sm:px-8">
-        {basics.name} · {basics.location.city} · Projects sync from GitHub · Press <kbd className="font-mono">/</kbd> to search
+        {basics.name} · {basics.location.city} · Projects sync from GitHub · <a href="/cv" className="underline-offset-4 hover:text-ink hover:underline">Printable CV</a> · Press <kbd className="font-mono">/</kbd> to search
       </footer>
     </>
   );

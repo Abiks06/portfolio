@@ -1,12 +1,14 @@
 import { Hero3D } from "./hero-3d";
+import { LocalTime } from "./local-time";
 import { HeroDepth, Magnetic } from "./motion-bits";
+import { ReactiveName } from "./reactive-name";
 
 const delay = (s: number) => ({ animationDelay: `${s}s` });
 
 /** A line of display type that slides up out of a mask. */
 function MaskLine({ children, delay: d, className }: { children: React.ReactNode; delay: number; className?: string }) {
   return (
-    <span className="block overflow-hidden pb-[0.08em]">
+    <span className="mask-line block pb-[0.08em]">
       <span className={`anim-rise block ${className ?? ""}`} style={delay(d)}>
         {children}
       </span>
@@ -22,6 +24,9 @@ export function Hero({
   label,
   summary,
   email,
+  city,
+  timezone,
+  availability,
 }: {
   firstName: string;
   lastName: string;
@@ -29,6 +34,9 @@ export function Hero({
   label: string;
   summary: string;
   email: string;
+  city: string;
+  timezone?: string;
+  availability?: string;
 }) {
   return (
     // overflow-x-clip: the sculpture hangs off the right edge on phones; clip (not hidden) keeps vertical overflow visible.
@@ -37,10 +45,18 @@ export function Hero({
         <p className="anim-fade-up font-mono text-xs uppercase tracking-[0.18em] text-ink-3" style={delay(0.05)}>
           {eyebrow}
         </p>
+        {(timezone || availability) && (
+          <p className="anim-fade-up mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs text-ink-2" style={delay(0.08)}>
+            {timezone && <LocalTime city={city} zone={timezone} />}
+            {availability && <span>{availability}</span>}
+          </p>
+        )}
         <h1 className="mt-6 font-display text-[clamp(3.5rem,11vw,8.5rem)] leading-[0.9] tracking-[-0.02em]">
-          <MaskLine delay={0.1}>{firstName}</MaskLine>
+          <MaskLine delay={0.1}>
+            <ReactiveName text={firstName} />
+          </MaskLine>
           <MaskLine delay={0.2} className="italic text-accent">
-            {lastName}
+            <ReactiveName text={lastName} />
           </MaskLine>
         </h1>
         <p className="anim-fade-up mt-8 text-lg font-medium text-ink sm:text-xl" style={delay(0.3)}>
@@ -65,6 +81,14 @@ export function Hero({
             className="inline-flex items-center rounded-full border border-line px-6 py-3 text-sm font-medium transition-[border-color,transform] duration-200 hover:border-ink active:scale-[0.97]"
           >
             Get in touch
+          </a>
+          </Magnetic>
+          <Magnetic>
+          <a
+            href="/cv"
+            className="inline-flex items-center rounded-full px-4 py-3 text-sm font-medium text-ink-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:underline"
+          >
+            CV ↗
           </a>
           </Magnetic>
         </div>

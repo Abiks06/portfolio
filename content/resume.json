@@ -3,6 +3,9 @@
   "basics": {
     "name": "Ayomide Emmanuel Abikoye",
     "label": "Computer Science Undergraduate · Full-Stack & Backend Developer",
+    "statement": "I build software for places where mistakes are expensive: Spring Boot services for a pan-African bank, analytics that mask personal data by default, and neural networks that read number plates without a photo ever leaving the device.",
+    "availability": "Open to internships and graduate roles for 2027",
+    "timezone": "Africa/Accra",
     "image": "https://avatars.githubusercontent.com/u/157048243?v=4",
     "email": "abikoyeayomide29@gmail.com",
     "summary": "Computer Science student at Academic City University (CWA 83.14) with internship experience across three of Ghana's largest banks. I build secure full-stack web apps with React, Next.js and Supabase, write backend services in Java Spring Boot, and enjoy real-time 3D graphics with Three.js. I care about security, data integrity and software that holds up in regulated, high-stakes environments.",

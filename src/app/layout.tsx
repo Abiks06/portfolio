@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Serif, Inter, JetBrains_Mono } from "next/font/google";
 import { SmoothScroll } from "@/components/smooth-scroll";
+import { themeScript } from "@/components/theme";
 import { resume } from "@/lib/resume";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -51,8 +52,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
+      // The theme script sets data-theme before React hydrates.
+      suppressHydrationWarning
       className={`${inter.variable} ${instrument.variable} ${jetbrains.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <SmoothScroll>{children}</SmoothScroll>
       </body>

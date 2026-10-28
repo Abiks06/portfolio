@@ -18,7 +18,8 @@ Any public repo under [Abiks06](https://github.com/Abiks06) tagged with the `por
   "featured": true,
   "startDate": "2026-10",
   "highlights": ["One line per highlight."],
-  "keywords": ["Python", "ONNX"]
+  "keywords": ["Python", "ONNX"],
+  "image": "https://… (optional: otherwise the card shows a daily screenshot of the live demo)"
 }
 ```
 
@@ -42,10 +43,21 @@ Education, experience, leadership, certificates and skills live in `content/resu
 
 Next.js (App Router) · TypeScript · Tailwind CSS · Motion · Lenis · deployed on Vercel. GitHub data is pre-rendered and re-checked every 15 minutes, so a newly tagged repo appears with no per-repo setup. For an immediate refresh, open `/api/revalidate?secret=<REVALIDATE_SECRET>`.
 
+## Features
+
+- **Live from GitHub:** project cards (with a screenshot of each live demo, taken by [Microlink](https://microlink.io)'s free API and refreshed every 6 hours), stars and languages, a "Right now on GitHub" feed of the latest commits, pull requests and new repos, and the contribution calendar, which can switch to a **3D city** you can turn.
+- **Stack constellation:** an interactive map of which tools each project uses, built from the same data; point at a node to trace it, click a project to open it.
+- **Printable CV** at [/cv](https://ayomide-abikoye.vercel.app/cv), generated from `resume.json` and the featured projects; "Save as PDF" gives a clean two-page A4.
+- **Light/dark theme toggle** (remembered, or following the system), local time in Accra and current availability (`basics.availability` in `resume.json`).
+- **⌘K / Ctrl+K / `/` command menu** for everything above, and an easter egg for anyone who knows a certain cheat code.
+
 ## Motion
 
 Motion is spent where a first visit benefits and kept out of the way of reading:
 
+- **3D:** the hero sculpture spins when you drag it (and coasts), and shatters into its faces when you click it, springing back together; the contribution city rises out of the ground week by week.
+- **Type:** the letters of the name lean away from the cursor; a statement under the hero lights up word by word as you scroll through it.
+- **Theme switch:** the new theme spreads out in a circle from the toggle (View Transitions API).
 - **Scroll-linked:** the hero's text and sculpture separate into layers as you scroll away; a two-row skills marquee drifts and follows your scroll speed and direction; the timeline rail draws itself and each job's dot fills as it reaches the middle of the screen; a hairline under the nav shows reading progress.
 - **On arrival:** section headings rise word by word out of a mask, matching the hero; stats count up; project cards and the contribution calendar stagger in.
 - **On the pointer (mouse and trackpad only):** project cards tilt and carry a soft spotlight; the main buttons lean toward the cursor.

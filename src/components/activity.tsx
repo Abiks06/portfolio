@@ -1,7 +1,8 @@
 "use client";
 
-import { useInView } from "motion/react";
-import { useEffect, useRef } from "react";
+import { m, useInView } from "motion/react";
+import dynamic from "next/dynamic";
+import { useEffect, useRef, useState } from "react";
 import type { ContributionDay } from "@/lib/github";
 
 const LEVEL_MIX = [0, 28, 50, 74, 100];
@@ -64,5 +65,35 @@ export function Heatmap({ days, total }: { days: ContributionDay[]; total: numbe
         More
       </figcaption>
     </figure>
+  );
+}
+
+// three.js is shared with the hero scene; this view's code only loads when someone picks 3D.
+const Skyline = dynamic(() => import("./contribution-skyline"), {
+  ssr: false,
+  loading: () => <div className="grid h-[340px] place-items-center font-mono text-xs text-ink-3 sm:h-[420px]">Building the skyline…</div>,
+});
+
+/** The calendar with a 2D/3D switch: the flat grid, or the same year as a city you can turn. */
+export function ActivityViews({ days, total }: { days: ContributionDay[]; total: number }) {
+  const [view, setView] = useState<"2d" | "3d">("2d");
+  return (
+    <div>
+      <div className="mb-5 flex gap-1" role="group" aria-label="Calendar view">
+        {(["2d", "3d"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            aria-pressed={view === v}
+            className={`relative rounded-full px-3.5 py-1 font-mono text-xs uppercase transition-colors duration-200 ${view === v ? "text-paper" : "text-ink-2 hover:text-ink"}`}
+          >
+            {view === v && <m.span layoutId="calendar-view" className="absolute inset-0 rounded-full bg-ink" transition={{ type: "spring", stiffness: 380, damping: 32 }} />}
+            <span className="relative">{v === "2d" ? "Grid" : "3D city"}</span>
+          </button>
+        ))}
+      </div>
+      {view === "2d" ? <Heatmap days={days} total={total} /> : <Skyline days={days} />}
+    </div>
   );
 }
