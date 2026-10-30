@@ -70,7 +70,11 @@
         "Implemented stateless JWT authentication and role-based access control with Spring Security; wrote unit and integration tests with JUnit and Mockito.",
         "Tested production systems, including the Ecobank Mobile App and a POS system, to verify transactions processed correctly."
       ],
-      "keywords": ["Java", "Spring Boot", "Spring Security", "PostgreSQL", "JPA/Hibernate", "JUnit", "Mockito", "Angular", "RxJS"]
+      "keywords": ["Java", "Spring Boot", "Spring Security", "PostgreSQL", "JPA/Hibernate", "JUnit", "Mockito", "Angular", "RxJS"],
+      "related": [
+        { "repo": "issue-logger", "shared": "role-based access control checked on every action" },
+        { "repo": "ATM-Interface-Simulator", "shared": "verifying that transactions process correctly" }
+      ]
     },
     {
       "name": "Stanbic Bank Ghana",
@@ -82,7 +86,10 @@
         "Collaborated with the programming team to debug and test software applications, ensuring high code quality.",
         "Researched software improvements and compiled detailed project reports."
       ],
-      "keywords": ["C#", "Software Testing", "Debugging"]
+      "keywords": ["C#", "Software Testing", "Debugging"],
+      "related": [
+        { "repo": "issue-logger", "shared": "debugging, testing and bug reports" }
+      ]
     },
     {
       "name": "Morning Star High School",
@@ -109,7 +116,8 @@
         "Directed a 12-member team to build an interactive, web-based 3D ATM simulation in Three.js, managing the timeline and component integration.",
         "Engineered the 3D scene architecture with custom geometry, complex lighting and raycasting for precise interaction.",
         "Optimized rendering performance by reducing draw calls and managing asset loading for high frame rates across devices."
-      ]
+      ],
+      "repo": "ATM-Interface-Simulator"
     },
     {
       "organization": "Research Methods, Academic City",
@@ -121,7 +129,8 @@
         "Led a 5-member team designing and testing a computer vision app for automated license plate recognition.",
         "Managed the data pipeline, analyzing model metrics to iteratively optimize training and image pre-processing.",
         "Integrated bounding-box overlays and real-time visual feedback, translating model output into UI coordinates."
-      ]
+      ],
+      "repo": "license-plate-detection"
     }
   ],
   "projects": [],

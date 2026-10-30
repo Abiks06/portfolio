@@ -2,11 +2,22 @@
 
 import { m, useScroll, useSpring } from "motion/react";
 import { useRef } from "react";
-import { formatRange, type Work } from "@/lib/resume";
+import { formatRange, repoSlug, type Work } from "@/lib/resume";
+import { OPEN_PROJECT_EVENT } from "./command-menu";
 import { Reveal } from "./reveal";
 
+/** Opens a project's detail view, the same way the command menu does. */
+export function OpenProject({ slug, children, className }: { slug: string; children: React.ReactNode; className?: string }) {
+  return (
+    <button type="button" className={className} onClick={() => window.dispatchEvent(new CustomEvent(OPEN_PROJECT_EVENT, { detail: slug }))}>
+      {children}
+    </button>
+  );
+}
+
 /** Experience list with a rail that draws itself as the section scrolls past. */
-export function Timeline({ work }: { work: Work[] }) {
+export function Timeline({ work, projects }: { work: Work[]; projects: { slug: string; name: string }[] }) {
+  const names = new Map(projects.map((p) => [p.slug, p.name.split(":")[0]]));
   const ref = useRef<HTMLOListElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 75%", "end 60%"] });
   const scaleY = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
@@ -55,6 +66,26 @@ export function Timeline({ work }: { work: Work[] }) {
                   </li>
                 ))}
               </ul>
+            )}
+            {job.related?.some((r) => names.has(repoSlug(r.repo))) && (
+              <div className="mt-5 max-w-2xl rounded-2xl border border-dashed border-line p-4">
+                <p className="font-mono text-[11px] uppercase tracking-wider text-ink-3">Same ground in my projects</p>
+                <ul className="mt-2 space-y-1.5">
+                  {job.related
+                    .filter((r) => names.has(repoSlug(r.repo)))
+                    .map((r) => (
+                      <li key={r.repo} className="text-sm text-ink-2">
+                        <OpenProject
+                          slug={repoSlug(r.repo)}
+                          className="font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-accent"
+                        >
+                          {names.get(repoSlug(r.repo))}
+                        </OpenProject>{" "}
+                        · {r.shared}
+                      </li>
+                    ))}
+                </ul>
+              </div>
             )}
           </Reveal>
         </li>

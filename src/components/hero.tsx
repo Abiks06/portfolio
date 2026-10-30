@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Hero3D } from "./hero-3d";
 import { LocalTime } from "./local-time";
 import { HeroDepth, Magnetic } from "./motion-bits";
@@ -84,12 +85,12 @@ export function Hero({
           </a>
           </Magnetic>
           <Magnetic>
-          <a
+          <Link
             href="/cv"
             className="inline-flex items-center rounded-full px-4 py-3 text-sm font-medium text-ink-2 underline-offset-4 transition-colors duration-200 hover:text-ink hover:underline"
           >
             CV ↗
-          </a>
+          </Link>
           </Magnetic>
         </div>
       </HeroDepth>

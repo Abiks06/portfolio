@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { copyText } from "@/lib/copy-text";
 import { BURST_EVENT } from "@/lib/events";
+import { TRACKS } from "@/lib/resume";
 import { setTheme } from "./theme";
 
 const OPEN_EVENT = "portfolio:command-menu";
@@ -63,6 +64,14 @@ export function CommandMenu({
       { id: "about", group: "Go to", label: "Education & skills", keywords: "university skills certifications", run: () => go("#about") },
       { id: "contact", group: "Go to", label: "Contact", keywords: "email hire", run: () => go("#contact") },
       { id: "cv", group: "Go to", label: "CV (printable)", hint: "/cv", keywords: "resume pdf download print", run: () => router.push("/cv") },
+      ...TRACKS.map((t) => ({
+        id: `cv-${t.id}`,
+        group: "Go to",
+        label: `CV for ${t.label.toLowerCase()} roles`,
+        hint: `/cv/${t.id}`,
+        keywords: `resume pdf print ${t.headline}`,
+        run: () => router.push(`/cv/${t.id}`),
+      })),
       ...projects.map((p) => ({
         id: `project-${p.slug}`,
         group: "Open project",

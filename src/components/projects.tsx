@@ -11,7 +11,7 @@ import {
 } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/lib/github";
-import { formatDate } from "@/lib/resume";
+import { formatDate, TRACKS } from "@/lib/resume";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { OPEN_PROJECT_EVENT } from "./command-menu";
 
@@ -166,6 +166,12 @@ function ProjectCard({ project, index, onOpen, hidden }: { project: Project; ind
         <Screenshot project={project} zoom className="relative mt-6" />
         <h3 className={`relative font-display text-3xl leading-tight sm:text-4xl ${project.image ? "mt-6" : "mt-10"}`}>{project.name}</h3>
         {project.description && <p className="relative mt-3 line-clamp-3 text-sm leading-relaxed text-ink-2">{project.description}</p>}
+        {project.metrics[0] && (
+          <p className="relative mt-5 flex items-baseline gap-3 border-t border-line pt-4">
+            <span className="shrink-0 font-display text-3xl leading-none text-accent">{project.metrics[0].value}</span>
+            <span className="text-xs leading-snug text-ink-2">{project.metrics[0].label}</span>
+          </p>
+        )}
         <div className="relative mt-auto flex items-end justify-between gap-4 pt-8">
           <LanguageChips project={project} />
           <span
@@ -177,6 +183,70 @@ function ProjectCard({ project, index, onOpen, hidden }: { project: Project; ind
         </div>
       </m.button>
     </Tilt>
+  );
+}
+
+/** Measured results, how the system fits together, and the choices behind it, from the repo's card file. */
+function CaseStudy({ project }: { project: Project }) {
+  const { metrics, pipeline, decisions } = project;
+  return (
+    <>
+      {metrics.length > 0 && (
+        <dl className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
+          {metrics.map((m) => (
+            <div key={m.label} className="bg-paper p-5">
+              <dt className="sr-only">{m.label}</dt>
+              <dd className="font-display text-4xl leading-none text-accent">{m.value}</dd>
+              <dd className="mt-2 text-sm leading-snug text-ink-2">{m.label}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {pipeline.length > 0 && (
+        <div className="mt-10">
+          <p className="font-mono text-xs uppercase tracking-wider text-ink-3">How it fits together</p>
+          <ol className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            {pipeline.map((stage, i) => (
+              <m.li
+                key={stage}
+                className="flex items-center gap-2"
+                initial={{ opacity: 0, transform: "translateY(6px)" }}
+                animate={{ opacity: 1, transform: "translateY(0px)" }}
+                transition={{ duration: 0.4, delay: 0.25 + i * 0.07, ease }}
+              >
+                {i > 0 && (
+                  <span aria-hidden="true" className="text-ink-3 max-sm:hidden">
+                    →
+                  </span>
+                )}
+                <span className="rounded-lg border border-line bg-paper px-3 py-1.5 text-sm">
+                  <span className="mr-2 font-mono text-[10px] text-ink-3">{pad(i)}</span>
+                  {stage}
+                </span>
+              </m.li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {decisions.length > 0 && (
+        <div className="mt-10">
+          <p className="font-mono text-xs uppercase tracking-wider text-ink-3">Decisions</p>
+          <ul className="mt-4 space-y-3">
+            {decisions.map((d) => (
+              <li key={d.choice} className="rounded-2xl border border-line p-5">
+                <p className="font-medium">{d.choice}</p>
+                <p className="mt-1 text-sm text-ink-3">
+                  over <span className="line-through decoration-ink-3/60">{d.over}</span>
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-ink-2">{d.because}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -265,29 +335,15 @@ function ProjectDetail({ project, index, onClose }: { project: Project; index: n
             </ul>
           )}
 
+          <CaseStudy project={project} />
+
           {total > 0 && (
-            <div className="mt-10">
-              <p className="font-mono text-xs uppercase tracking-wider text-ink-3">Languages</p>
-              <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-line">
-                {project.languages.map((l, i) => (
-                  <m.span
-                    key={l.name}
-                    className="h-full"
-                    style={{ background: i === 0 ? "var(--accent)" : `color-mix(in oklab, var(--ink) ${70 - i * 20}%, transparent)` }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(l.bytes / total) * 100}%` }}
-                    transition={{ duration: 0.9, delay: 0.3 + i * 0.08, ease }}
-                  />
-                ))}
-              </div>
-              <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-2">
-                {project.languages.map((l) => (
-                  <li key={l.name}>
-                    {l.name} <span className="text-ink-3">{Math.round((l.bytes / total) * 100)}%</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="mt-10 font-mono text-[11px] text-ink-3">
+              {project.languages
+                .slice(0, 4)
+                .map((l) => `${l.name} ${Math.round((l.bytes / total) * 100)}%`)
+                .join(" · ")}
+            </p>
           )}
 
           {project.keywords.length > 0 && (
@@ -323,12 +379,16 @@ export function Projects({ projects }: { projects: Project[] }) {
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const lenis = useLenis();
 
+  // Filter by role focus when the cards declare one, else by main language.
+  const byTrack = projects.some((p) => p.tracks.length);
   const filters = useMemo(() => {
+    if (byTrack) return [{ id: "All", label: "All" }, ...TRACKS.filter((t) => projects.some((p) => p.tracks.includes(t.id)))];
     const primary = projects.map((p) => p.languages[0]?.name).filter(Boolean) as string[];
-    return ["All", ...Array.from(new Set(primary))];
-  }, [projects]);
+    return ["All", ...new Set(primary)].map((f) => ({ id: f, label: f }));
+  }, [projects, byTrack]);
 
-  const visible = filter === "All" ? projects : projects.filter((p) => p.languages[0]?.name === filter);
+  const visible =
+    filter === "All" ? projects : projects.filter((p) => (byTrack ? p.tracks.includes(filter as (typeof p.tracks)[number]) : p.languages[0]?.name === filter));
   const openIndex = projects.findIndex((p) => p.slug === openSlug);
   const open = openIndex >= 0 ? projects[openIndex] : null;
 
@@ -362,18 +422,18 @@ export function Projects({ projects }: { projects: Project[] }) {
 
   return (
     <LayoutGroup>
-      <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label="Filter projects by language">
+      <div className="mb-8 flex flex-wrap gap-2" role="group" aria-label={byTrack ? "Filter projects by focus" : "Filter projects by language"}>
         {filters.map((f) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
-            aria-pressed={filter === f}
-            className={`relative rounded-full px-4 py-1.5 text-sm transition-colors duration-200 ${filter === f ? "text-paper" : "text-ink-2 hover:text-ink"}`}
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            aria-pressed={filter === f.id}
+            className={`relative rounded-full px-4 py-1.5 text-sm transition-colors duration-200 ${filter === f.id ? "text-paper" : "text-ink-2 hover:text-ink"}`}
           >
-            {filter === f && (
+            {filter === f.id && (
               <m.span layoutId="filter-pill" className="absolute inset-0 rounded-full bg-ink" transition={{ type: "spring", stiffness: 380, damping: 32 }} />
             )}
-            <span className="relative">{f}</span>
+            <span className="relative">{f.label}</span>
           </button>
         ))}
       </div>

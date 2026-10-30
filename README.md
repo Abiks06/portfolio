@@ -19,10 +19,16 @@ Any public repo under [Abiks06](https://github.com/Abiks06) tagged with the `por
   "startDate": "2026-10",
   "highlights": ["One line per highlight."],
   "keywords": ["Python", "ONNX"],
+  "tracks": ["ml", "fullstack"],
+  "metrics": [{ "value": "79%", "label": "of 310 Ghanaian plates read exactly", "headline": "Ghanaian plates read exactly" }],
+  "pipeline": ["Photo or webcam", "Detector", "Plate reader", "Format decoder"],
+  "decisions": [{ "choice": "Float16 weights", "over": "INT8 quantisation", "because": "INT8 lost 10 points; float16 halved downloads." }],
   "image": "https://… (optional: otherwise the card shows a screenshot of the live demo)",
   "screenshot": { "waitForHidden": ".loading", "delay": 3000 }
 }
 ```
+
+`tracks` (`backend`, `fullstack`, `ml`) drive the project filters and the tailored CVs. `metrics`, `pipeline` and `decisions` make up the case study in the project's detail view; the first metric also shows on its card, and a metric with a `headline` (a short label) joins the proof row under the hero. Keep them to what the repo's README can back up.
 
 So adding a project is: push the repo, add the `portfolio` topic and, optionally, that file. The site picks it up within 15 minutes (or straight away via `/api/revalidate?secret=<REVALIDATE_SECRET>`); no change to this repo, no redeploy. A project without a repo can still go in `content/resume.json` under `projects`, and an entry there with a `repo` field overrides that repo's file field by field.
 
@@ -63,7 +69,8 @@ Then publish `./shots` to the `screenshots` branch (or run the workflow, which k
 
 - **Live from GitHub:** project cards (with a screenshot of each live demo, taken by [Microlink](https://microlink.io)'s free API and refreshed every 6 hours), stars and languages, a "Right now on GitHub" feed of the latest commits, pull requests and new repos, and the contribution calendar, which can switch to a **3D city** you can turn.
 - **Stack constellation:** an interactive map of which tools each project uses, built from the same data; point at a node to trace it, click a project to open it.
-- **Printable CV** at [/cv](https://ayomide-abikoye.vercel.app/cv), generated from `resume.json` and the featured projects; "Save as PDF" gives a clean two-page A4.
+- **Printable CV** at [/cv](https://ayomide-abikoye.vercel.app/cv), generated from `resume.json` and the featured projects; "Save as PDF" gives a clean two-page A4. Role-tailored versions at [/cv/backend](https://ayomide-abikoye.vercel.app/cv/backend), [/cv/fullstack](https://ayomide-abikoye.vercel.app/cv/fullstack) and [/cv/ml](https://ayomide-abikoye.vercel.app/cv/ml) lead with that role's headline, projects and skills.
+- **Experience links to projects:** a job's `related` entries in `resume.json` (`{ "repo", "shared" }`) and a leadership role's `repo` open the matching project from the experience section.
 - **Light/dark theme toggle** (remembered, or following the system), local time in Accra and current availability (`basics.availability` in `resume.json`).
 - **⌘K / Ctrl+K / `/` command menu** for everything above, and an easter egg for anyone who knows a certain cheat code.
 

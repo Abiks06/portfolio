@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActivityViews } from "@/components/activity";
 import { CommandMenu } from "@/components/command-menu";
 import { Constellation } from "@/components/constellation";
@@ -10,9 +11,9 @@ import { CopyEmail, KineticText, Magnetic, ScrubText } from "@/components/motion
 import { Nav } from "@/components/nav";
 import { Projects } from "@/components/projects";
 import { CountUp, Reveal } from "@/components/reveal";
-import { Timeline } from "@/components/timeline";
+import { OpenProject, Timeline } from "@/components/timeline";
 import { getActivity, getContributions, getGitHubStats, getProjects } from "@/lib/github";
-import { formatDate, formatRange, resume } from "@/lib/resume";
+import { formatDate, formatRange, repoSlug, resume } from "@/lib/resume";
 import { SITE_URL } from "@/lib/site";
 
 function SectionHeading({ index, title, kicker }: { index: string; title: string; kicker?: string }) {
@@ -37,12 +38,22 @@ export default async function Home() {
   const cwa = Number(university.score?.match(/[\d.]+/)?.[0] ?? 0);
   const internships = work.filter((w) => /intern/i.test(w.position)).length;
 
+  // Measured results from the projects' card files lead; GitHub counts only fill in when there are none.
+  const proof = projects
+    .flatMap((p) => p.metrics.filter((m) => typeof m.headline === "string").map((m) => ({ ...m, project: p.name.split(":")[0] })))
+    .slice(0, 2)
+    .map((m) => {
+      const [, num = "", suffix = ""] = m.value.match(/^([\d.]+)(.*)$/) ?? [];
+      return { value: Number(num), decimals: num.split(".")[1]?.length ?? 0, suffix, label: `${m.headline} · ${m.project}` };
+    })
+    .filter((m) => Number.isFinite(m.value) && m.value > 0);
   const statItems = [
-    contributions && { value: contributions.total, label: "Contributions this year" },
-    stats && { value: stats.publicRepos, label: "Public repositories" },
+    ...proof,
+    proof.length < 1 && contributions && { value: contributions.total, label: "Contributions this year" },
+    proof.length < 2 && stats && { value: stats.publicRepos, label: "Public repositories" },
     { value: internships, label: "Internships at banks" },
     cwa && { value: cwa, decimals: 2, label: "Cumulative weighted average" },
-  ].filter(Boolean) as { value: number; decimals?: number; label: string }[];
+  ].filter(Boolean) as { value: number; decimals?: number; suffix?: string; label: string }[];
 
   // schema.org Person, so search engines can show a rich result for the name.
   const personJsonLd = {
@@ -91,6 +102,7 @@ export default async function Home() {
             <Reveal key={s.label} delay={i * 0.08} className="bg-paper p-6 sm:p-8">
               <p className="font-display text-5xl leading-none sm:text-6xl">
                 <CountUp value={s.value} decimals={s.decimals} />
+                {s.suffix}
               </p>
               <p className="mt-3 text-sm text-ink-2">{s.label}</p>
             </Reveal>
@@ -136,7 +148,7 @@ export default async function Home() {
 
         <section id="experience" className="scroll-mt-20 pt-28 sm:pt-40">
           <SectionHeading index="02" title="Experience" kicker="Internships across three of Ghana's largest banks." />
-          <Timeline work={work} />
+          <Timeline work={work} projects={projects.map((p) => ({ slug: p.slug, name: p.name }))} />
 
           <div className="mt-24">
             <Reveal>
@@ -163,6 +175,14 @@ export default async function Home() {
                       </li>
                     ))}
                   </ul>
+                  {role.repo && projects.some((p) => p.slug === repoSlug(role.repo!)) && (
+                    <OpenProject
+                      slug={repoSlug(role.repo)}
+                      className="mt-auto self-start pt-6 text-sm font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-accent"
+                    >
+                      The project today: {projects.find((p) => p.slug === repoSlug(role.repo!))!.name.split(":")[0]} →
+                    </OpenProject>
+                  )}
                 </Reveal>
               ))}
             </div>
@@ -281,7 +301,7 @@ export default async function Home() {
         </section>
       </main>
       <footer className="mx-auto w-full max-w-6xl border-t border-line px-4 py-8 text-xs text-ink-3 sm:px-8">
-        {basics.name} · {basics.location.city} · Projects sync from GitHub · <a href="/cv" className="underline-offset-4 hover:text-ink hover:underline">Printable CV</a> · Press <kbd className="font-mono">/</kbd> to search
+        {basics.name} · {basics.location.city} · Projects sync from GitHub · <Link href="/cv" className="underline-offset-4 hover:text-ink hover:underline">Printable CV</Link> · Press <kbd className="font-mono">/</kbd> to search
       </footer>
     </>
   );

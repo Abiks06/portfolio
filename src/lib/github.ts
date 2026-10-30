@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { resume, type ResumeProject } from "./resume";
+import { resume, repoSlug, type Decision, type Metric, type ResumeProject, type Track } from "./resume";
 
 /** Tag shared by all GitHub data; /api/revalidate refreshes it on demand. */
 export const GITHUB_CACHE_TAG = "github";
@@ -32,6 +32,10 @@ export type Project = {
   image: string | null;
   /** When the screenshot was taken, if it is one. */
   imageCapturedAt?: string;
+  tracks: Track[];
+  metrics: Metric[];
+  decisions: Decision[];
+  pipeline: string[];
 };
 
 export type ContributionDay = { date: string; count: number; level: 0 | 1 | 2 | 3 | 4 };
@@ -75,6 +79,9 @@ type Card = Partial<Omit<ResumeProject, "repo">> & { image?: string };
 
 const isDate = (v: unknown): v is string => typeof v === "string" && /^\d{4}(-\d{2})?$/.test(v);
 const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
+const isTracks = (v: unknown): v is Track[] => Array.isArray(v) && v.every((x) => x === "backend" || x === "fullstack" || x === "ml");
+const isObjects = <T>(v: unknown, keys: string[]): v is T[] =>
+  Array.isArray(v) && v.every((x) => x && typeof x === "object" && keys.every((k) => typeof (x as Record<string, unknown>)[k] === "string"));
 
 /** Keeps only well-formed fields, so a typo in one repo's file can't break the page. */
 function parseCard(raw: unknown): Card {
@@ -89,6 +96,10 @@ function parseCard(raw: unknown): Card {
     ...(isStrings(r.highlights) && { highlights: r.highlights }),
     ...(isStrings(r.keywords) && { keywords: r.keywords }),
     ...(typeof r.image === "string" && r.image.startsWith("https://") && { image: r.image }),
+    ...(isTracks(r.tracks) && { tracks: r.tracks }),
+    ...(isObjects<Metric>(r.metrics, ["value", "label"]) && { metrics: r.metrics }),
+    ...(isObjects<Decision>(r.decisions, ["choice", "over", "because"]) && { decisions: r.decisions }),
+    ...(isStrings(r.pipeline) && { pipeline: r.pipeline }),
   };
 }
 
@@ -105,7 +116,7 @@ async function repoCard(repo: string): Promise<Card> {
 function toProject(repo: GitHubRepo | null, extra: Card | undefined, languages: Record<string, number>): Project {
   const name = extra?.name ?? prettify(repo?.name ?? "");
   return {
-    slug: (repo?.name ?? name).toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    slug: repoSlug(repo?.name ?? name),
     name,
     // Repos without a GitHub description borrow the first resume highlight.
     description: repo?.description ?? extra?.description ?? extra?.highlights?.[0] ?? null,
@@ -124,6 +135,10 @@ function toProject(repo: GitHubRepo | null, extra: Card | undefined, languages: 
     startDate: extra?.startDate,
     endDate: extra?.endDate,
     image: extra?.image ?? null,
+    tracks: extra?.tracks ?? [],
+    metrics: extra?.metrics ?? [],
+    decisions: extra?.decisions ?? [],
+    pipeline: extra?.pipeline ?? [],
   };
 }
 
