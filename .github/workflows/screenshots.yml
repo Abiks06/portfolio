@@ -47,6 +47,9 @@ jobs:
       - name: Publish
         working-directory: ${{ runner.temp }}/shots
         run: |
+          # Vercel reads vercel.json from the pushed commit, not from main, so this image-only branch
+          # needs its own to stop Vercel trying (and failing) to build it on every push.
+          echo '{ "git": { "deploymentEnabled": false } }' > vercel.json
           git init -q -b screenshots
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
